@@ -2,6 +2,7 @@ import logging
 import json
 from urllib.error import HTTPError
 import traceback
+from datetime import datetime
 
 from ckan.model import Session
 from ckan.logic import get_action
@@ -14,10 +15,18 @@ from ckan.lib.search import rebuild
 from ckanext.harvest.model import HarvestObject
 
 import oaipmh.client
+from oaipmh.client import Client
 from oaipmh.metadata import MetadataRegistry
 
 from ckanext.oaipmh.metadata import oai_ddi_reader
 from ckanext.oaipmh.metadata import oai_dc_reader
+from ckanext.oaipmh.metadata import oai_datacite_reader
+
+from rdkit.Chem import inchi
+from rdkit.Chem import rdmolfiles
+from rdkit.Chem import Draw
+from rdkit.Chem import Descriptors
+
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +35,8 @@ class OaipmhHarvester(HarvesterBase):
     """
     OAI-PMH Harvester
     """
+    # TODO: Check weather vaild or not
+    # This function is extension only to oai_datacite
 
     def info(self):
         """
@@ -112,11 +123,16 @@ class OaipmhHarvester(HarvesterBase):
         pyoai generates the URL based on the given method parameters
         Therefore one may not use the set parameter if it is not there
         """
-        if self.set_spec:
-            for header in client.listIdentifiers(
-                metadataPrefix=self.md_format, set=self.set_spec
-            ):
+        if self.set_from or self.set_until:
+            for header in client.listIdentifiers(metadataPrefix=self.md_format, set=self.set_spec,
+                                                 from_= datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"), until= datetime.strptime(self.set_until,"%Y-%m-%dT%H:%M:%SZ")):
                 yield header
+
+        elif self.set_spec:
+            for header in client.listIdentifiers(metadataPrefix=self.md_format, set=self.set_spec,
+                                                 from_= datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"), until= datetime.strptime(self.set_until,"%Y-%m-%dT%H:%M:%SZ")):
+                yield header
+
         else:
             for header in client.listIdentifiers(
                 metadataPrefix=self.md_format
@@ -127,6 +143,7 @@ class OaipmhHarvester(HarvesterBase):
         registry = MetadataRegistry()
         registry.registerReader("oai_dc", oai_dc_reader)
         registry.registerReader("oai_ddi", oai_ddi_reader)
+        registry.registerReader("oai_datacite", oai_datacite_reader)
         return registry
 
     def _set_config(self, source_config):
@@ -143,6 +160,8 @@ class OaipmhHarvester(HarvesterBase):
             self.user = "harvest"
             self.set_spec = config_json.get("set", None)
             self.md_format = config_json.get("metadata_prefix", "oai_dc")
+            self.set_from = config_json.get("from","1980-01-01T00:00:01Z")
+            self.set_until = config_json.get("until",str(datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")))
             self.force_http_get = config_json.get("force_http_get", False)
 
         except ValueError:
@@ -307,6 +326,15 @@ class OaipmhHarvester(HarvesterBase):
             package_dict["tags"] = tags
             package_dict["extras"] = extras
 
+            # create smiles code form inchi & add to extras table
+            smiles,inchi_key,exact_mass = self._get_chemical_info(content)
+            extras.append({"key":"smiles", "value": smiles})
+            extras.append({"key":"inchi_key", "value": inchi_key})
+            extras.append({"key": "exactmass", "value": exact_mass})
+
+            # Generate Molecule images
+            #self._generate_mol_image(package_dict)
+
             # groups aka projects
             groups = []
 
@@ -386,7 +414,6 @@ class OaipmhHarvester(HarvesterBase):
                 # the ckan indexer can't handle timezone-aware datetime objects
                 try:
                     from dateutil.parser import parse
-
                     date_value = parse(value)
                     date_without_tz = date_value.replace(tzinfo=None)
                     value = date_without_tz.isoformat()
@@ -434,6 +461,7 @@ class OaipmhHarvester(HarvesterBase):
     def _extract_additional_fields(self, content, package_dict):
         # This method is the ideal place for sub-classes to
         # change whatever they want in the package_dict
+
         return package_dict
 
     def _find_or_create_groups(self, groups, context):
@@ -455,3 +483,29 @@ class OaipmhHarvester(HarvesterBase):
 
         log.debug("Group ids: %s" % group_ids)
         return group_ids
+
+
+    def _get_chemical_info(self, content):
+        # function to convert InChI code to smiles code.
+        # This uses rdkit library to  convert available InChI to SMILES. (chemoinformatic)
+        smiles = None
+        inchi_key = None
+        exact_mass = None
+        standard_inchi = content["inchi"]
+
+        for inchi_code in standard_inchi:
+            if inchi_code.startswith('InChI'):
+                molecu = inchi.MolFromInchi(inchi_code)
+                smiles = rdmolfiles.MolToSmiles(molecu)
+                inchi_key = inchi.InchiToInchiKey(inchi_code)
+                exact_mass = Descriptors.MolWt(molecu)
+                # upload images to folder
+                filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.svg'
+                Draw.MolToFile(molecu, filepath)
+        #log.debug("Image is uploaded")
+        return smiles, inchi_key, exact_mass
+
+
+
+
+

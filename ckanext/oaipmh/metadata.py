@@ -98,3 +98,35 @@ oai_dc_reader = MetadataReader(
         "dc": "http://purl.org/dc/elements/1.1/",
     },
 )
+
+oai_datacite_reader = MetadataReader(
+fields={
+    'title':       ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:titles/datacite:title/text()'), #needtolookagain
+    'inchi':       ('textList','oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:titles/datacite:title[@titleType="AlternativeTitle"]/text()'),
+    'creator':     ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:creators/datacite:creator/datacite:creatorName/text()'),
+    'subject':     ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:subjects/datacite:subject/text()'),
+    'description': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:descriptions/datacite:description/text()'), #needtolookagain
+    'publisher':   ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:publisher/text()'),
+    'contributor': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:contributors/datacite:contributor/datacite:contributorName/text()'), #lookagain
+    'date':        ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:dates/datacite:date/text()'),
+    #'type':        ('textList', '//resource/type/text()'),
+    #'format':      ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource//text()'),
+    'identifier':  ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:identifier/text()'),
+    #'source':      ('textList', '//resource/source/text()'),
+    'language':    ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:language/text()'),
+    'relation':    ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:relatedIdentifiers/datacite:relatedIdentifier/text()'),
+    'relationType': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:relatedIdentifiers/datacite:relatedIdentifier/@relationType'),
+    #'coverage':    ('textList', '//resource/coverage/text()'),
+    'rights':      ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:rightsList/datacite:rights/text()'),
+    'publicationYear': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:publicationYear/text()')
+    },
+    namespaces={
+        'oai' : 'http://www.openarchives.org/OAI/2.0/',
+        'oai_datacite': 'http://schema.datacite.org/oai/oai-1.1/',
+        'datacite': 'http://datacite.org/schema/kernel-4',
+   }
+)
+
+
+
+
