@@ -500,9 +500,12 @@ class OaipmhHarvester(HarvesterBase):
                 inchi_key = inchi.InchiToInchiKey(inchi_code)
                 exact_mass = Descriptors.MolWt(molecu)
                 # upload images to folder
-                filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.svg'
-                Draw.MolToFile(molecu, filepath)
-        #log.debug("Image is uploaded")
+                try:
+                    filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.svg'
+                    Draw.MolToFile(molecu, filepath)
+                    log.debug("Moleculer Data loaded ")
+                except:
+                    pass
         return smiles, inchi_key, exact_mass
 
 
