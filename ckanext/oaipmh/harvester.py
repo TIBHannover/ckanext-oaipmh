@@ -498,7 +498,7 @@ class OaipmhHarvester(HarvesterBase):
                 molecu = inchi.MolFromInchi(inchi_code)
                 smiles = rdmolfiles.MolToSmiles(molecu)
                 inchi_key = inchi.InchiToInchiKey(inchi_code)
-                exact_mass = Descriptors.MolWt(molecu)
+                exact_mass = round(Descriptors.MolWt(molecu),3)
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.svg'
