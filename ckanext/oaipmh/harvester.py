@@ -501,7 +501,7 @@ class OaipmhHarvester(HarvesterBase):
                 exact_mass = round(Descriptors.MolWt(molecu),3)
                 # upload images to folder
                 try:
-                    filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.svg'
+                    filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
                     Draw.MolToFile(molecu, filepath)
                     log.debug("Moleculer Data loaded ")
                 except:
