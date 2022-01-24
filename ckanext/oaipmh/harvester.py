@@ -8,6 +8,8 @@ from ckan.model import Session
 from ckan.logic import get_action
 from ckan import model
 
+from ckan.logic import ActionError
+
 from ckanext.harvest.harvesters.base import HarvesterBase
 from ckan.lib.munge import munge_tag
 from ckan.lib.munge import munge_title_to_name
@@ -30,6 +32,7 @@ from rdkit.Chem import Descriptors
 
 log = logging.getLogger(__name__)
 
+#ValidationError = inheritclass.ActionError
 
 class OaipmhHarvester(HarvesterBase):
     """
@@ -327,7 +330,7 @@ class OaipmhHarvester(HarvesterBase):
             package_dict["extras"] = extras
 
             # create smiles code form inchi & add to extras table
-            smiles,inchi_key,exact_mass = self._get_chemical_info(content)
+            smiles,inchi_key,exact_mass = self._get_chemical_info(package_dict,content)
             extras.append({"key":"smiles", "value": smiles})
             extras.append({"key":"inchi_key", "value": inchi_key})
             extras.append({"key": "exactmass", "value": exact_mass})
@@ -397,6 +400,7 @@ class OaipmhHarvester(HarvesterBase):
     def _extract_tags_and_extras(self, content):
         extras = []
         tags = []
+
         for key, value in content.items():
             if key in self._get_mapping().values():
                 continue
@@ -407,7 +411,15 @@ class OaipmhHarvester(HarvesterBase):
                     tags.extend(value.split(";"))
                 continue
             if value and type(value) is list:
-                value = value[0]
+
+                    if key == 'relation' or key == 'relationType':
+                        try:
+                            value = value
+                        except Exception:
+                            pass
+                    else:
+                        value = value[0]
+
             if not value:
                 value = None
             if key.endswith("date") and value:
@@ -485,7 +497,7 @@ class OaipmhHarvester(HarvesterBase):
         return group_ids
 
 
-    def _get_chemical_info(self, content):
+    def _get_chemical_info(self, package ,content):
         # function to convert InChI code to smiles code.
         # This uses rdkit library to  convert available InChI to SMILES. (chemoinformatic)
         smiles = None
@@ -502,10 +514,15 @@ class OaipmhHarvester(HarvesterBase):
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    Draw.MolToFile(molecu, filepath)
-                    log.debug("Moleculer Data loaded ")
-                except:
+                    if not filepath:
+                        Draw.MolToFile(molecu, filepath)
+                        log.debug("Molecule Image generated for %s", package['id'])
+                    else:
+                        log.debug("Image Already exists")
+                except (FileExistsError, PermissionError):
                     pass
+
+        log.debug("Moleculer Data loaded for %s", package['id'])
         return smiles, inchi_key, exact_mass
 
 
