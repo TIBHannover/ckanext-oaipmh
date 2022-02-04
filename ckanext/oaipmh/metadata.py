@@ -116,6 +116,7 @@ fields={
     'language':    ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:language/text()'),
     'relation':    ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:relatedIdentifiers/datacite:relatedIdentifier/text()'),
     'relationType': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:relatedIdentifiers/datacite:relatedIdentifier/@relationType'),
+    'relationIdType': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:relatedIdentifiers/datacite:relatedIdentifier/@relatedIdentifierType'),
     #'coverage':    ('textList', '//resource/coverage/text()'),
     'rights':      ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:rightsList/datacite:rights/text()'),
     'publicationYear': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:publicationYear/text()')
