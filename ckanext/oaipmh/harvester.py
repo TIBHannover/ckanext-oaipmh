@@ -1,5 +1,6 @@
 import logging
 import json
+import random
 from urllib.error import HTTPError
 import traceback
 from datetime import datetime
@@ -8,7 +9,6 @@ from ckan.model import Session
 from ckan.logic import get_action
 from ckan import model
 
-from ckan.logic import ActionError
 
 from ckanext.harvest.harvesters.base import HarvesterBase
 from ckan.lib.munge import munge_tag
@@ -29,10 +29,18 @@ from rdkit.Chem import rdmolfiles
 from rdkit.Chem import Draw
 from rdkit.Chem import Descriptors
 
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from psycopg2.extras import LoggingConnection
+from psycopg2.extras import LoggingCursor
+
 
 log = logging.getLogger(__name__)
 
-#ValidationError = inheritclass.ActionError
+DB_HOST = "localhost"
+DB_USER = "ckan_default"
+DB_NAME = "ckan_default"
+DB_pwd = "123456789"
 
 class OaipmhHarvester(HarvesterBase):
     """
@@ -325,9 +333,10 @@ class OaipmhHarvester(HarvesterBase):
 
             # extract tags from 'type' and 'subject' field
             # everything else is added as extra field
-            tags, extras = self._extract_tags_and_extras(content)
+            tags, extras, related_resources = self._extract_tags_and_extras(content)
             package_dict["tags"] = tags
             package_dict["extras"] = extras
+
 
             # create smiles code form inchi & add to extras table
             smiles,inchi_key,exact_mass = self._get_chemical_info(package_dict,content)
@@ -335,8 +344,6 @@ class OaipmhHarvester(HarvesterBase):
             extras.append({"key":"inchi_key", "value": inchi_key})
             extras.append({"key": "exactmass", "value": exact_mass})
 
-            # Generate Molecule images
-            #self._generate_mol_image(package_dict)
 
             # groups aka projects
             groups = []
@@ -350,6 +357,7 @@ class OaipmhHarvester(HarvesterBase):
                         content["set_spec"], context.copy()
                     )
                 )
+
 
             # add groups from content
             groups.extend(
@@ -372,6 +380,10 @@ class OaipmhHarvester(HarvesterBase):
             Session.commit()
 
             log.debug("Finished record")
+
+            # TODO:This is just test
+            log.debug(self._save_relationships(package_dict, content))
+
         except (Exception) as e:
             log.exception(e)
             self._save_object_error(
@@ -400,6 +412,7 @@ class OaipmhHarvester(HarvesterBase):
     def _extract_tags_and_extras(self, content):
         extras = []
         tags = []
+        related_resources = []
 
         for key, value in content.items():
             if key in self._get_mapping().values():
@@ -411,15 +424,15 @@ class OaipmhHarvester(HarvesterBase):
                     tags.extend(value.split(";"))
                 continue
             if value and type(value) is list:
-
+                    # To harvest related and relationType without raising any exceptions
                     if key == 'relation' or key == 'relationType':
                         try:
                             value = value
                         except Exception:
                             pass
+
                     else:
                         value = value[0]
-
             if not value:
                 value = None
             if key.endswith("date") and value:
@@ -435,7 +448,7 @@ class OaipmhHarvester(HarvesterBase):
 
         tags = [{"name": munge_tag(tag[:100])} for tag in tags]
 
-        return (tags, extras)
+        return (tags, extras, related_resources)
 
     def _get_possible_resource(self, harvest_obj, content):
         url = None
@@ -473,7 +486,6 @@ class OaipmhHarvester(HarvesterBase):
     def _extract_additional_fields(self, content, package_dict):
         # This method is the ideal place for sub-classes to
         # change whatever they want in the package_dict
-
         return package_dict
 
     def _find_or_create_groups(self, groups, context):
@@ -497,13 +509,24 @@ class OaipmhHarvester(HarvesterBase):
         return group_ids
 
 
+# NFDI4Chem extensions for storing chemical data in respective tables
+
+
     def _get_chemical_info(self, package ,content):
-        # function to convert InChI code to smiles code.
-        # This uses rdkit library to  convert available InChI to SMILES. (chemoinformatic)
+
+        """ function to convert InChI code to smiles code.
+        This uses rdkit library to  convert available InChI to SMILES. (Chemoinformatic library)
+
+        Database Table has been generated for molecule data.
+        We use psycopg2 to connect to database and INSERT data using SQL query
+
+        """
+        global values
         smiles = None
         inchi_key = None
         exact_mass = None
         standard_inchi = content["inchi"]
+        package_id = package['id']
 
         for inchi_code in standard_inchi:
             if inchi_code.startswith('InChI'):
@@ -516,16 +539,92 @@ class OaipmhHarvester(HarvesterBase):
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
                     if not filepath:
                         Draw.MolToFile(molecu, filepath)
-                        log.debug("Molecule Image generated for %s", package['id'])
+                        log.debug("Molecule Image generated for %s", package_id)
                     else:
                         log.debug("Image Already exists")
                 except (FileExistsError, PermissionError):
                     pass
 
+
+        values = [package_id,json.dumps(standard_inchi), smiles, inchi_key, exact_mass]
+
+
+        # connect to db
+        con = psycopg2.connect(user=DB_USER,
+                               host=DB_HOST,
+                               password=DB_pwd,
+                               dbname=DB_NAME)
+
+        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+        # cursor for executation
+        cur = con.cursor()
+
+        # Check if the row already exists, if no then INSERT new row
+        cur.execute("SELECT * FROM molecule_data WHERE package_id = %s", (package_id,))
+        if cur.fetchone() is None:
+            cur.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s)", values)
+
+
+        # commit cursor
+        con.commit()
+        # close cursor
+        cur.close()
+        # close connection
+        con.close()
+
         log.debug("Moleculer Data loaded for %s", package['id'])
+
         return smiles, inchi_key, exact_mass
 
 
 
+    def _save_relationships(self, package, content):
+
+        """ Database Table have been generated for storing related resources
+        We connect to database and send those values directly  from harvested metadata"""
+
+        package_id =    package['id']
+        relation_id =   content['relation']
+        relationType =  content['relationType']
+        relationIdType = content['relationIdType']
+
+        value = list(self.yield_func(package_id, relation_id,relationType,relationIdType))
 
 
+        #connect to db
+        con = psycopg2.connect(user = DB_USER,
+                                     host =  DB_HOST,
+                                     password = DB_pwd,
+                                     dbname = DB_NAME )
+
+        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+        # Cursor
+        cur = con.cursor()
+
+        # Check if the row already exists, if not then INSERT
+        for val in  value:
+            cur.execute(
+                "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0],val[1],))
+
+            if cur.fetchone() is None:
+                cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)", val)
+
+
+        # commit cursor
+        con.commit()
+        # close cursor
+        cur.close()
+        # close connection
+        con.close()
+
+        return "Data loaded to database"
+
+
+    def yield_func(self,package_id, relation_id,relationType,relationIdType):
+        # An yield function to return generator list values to make a single list of values
+
+        for p,q,r in zip(relation_id,relationType,relationIdType):
+            value = (package_id, p,q,r )
+            yield value
