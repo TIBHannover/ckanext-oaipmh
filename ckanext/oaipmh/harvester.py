@@ -521,7 +521,7 @@ class OaipmhHarvester(HarvesterBase):
         We use psycopg2 to connect to database and INSERT data using SQL query
 
         """
-        global values
+        #global values
         smiles = None
         inchi_key = None
         exact_mass = None
