@@ -1,6 +1,6 @@
 import logging
 import json
-import random
+import re
 from urllib.error import HTTPError
 import traceback
 from datetime import datetime
@@ -47,7 +47,6 @@ class OaipmhHarvester(HarvesterBase):
     OAI-PMH Harvester
     """
     # TODO: Check weather vaild or not
-    # This function is extension only to oai_datacite
 
     def info(self):
         """
@@ -377,12 +376,13 @@ class OaipmhHarvester(HarvesterBase):
                 package_dict, harvest_object, "package_show"
             )
             rebuild(package_dict["name"])
+
             Session.commit()
 
             log.debug("Finished record")
 
             # TODO:This is just test
-            log.debug(self._save_relationships(package_dict, content))
+            log.debug(self._save_relationships_to_db(package_dict, content, smiles,inchi_key,exact_mass))
 
         except (Exception) as e:
             log.exception(e)
@@ -430,7 +430,6 @@ class OaipmhHarvester(HarvesterBase):
                             value = value
                         except Exception:
                             pass
-
                     else:
                         value = value[0]
             if not value:
@@ -446,6 +445,9 @@ class OaipmhHarvester(HarvesterBase):
                     continue
             extras.append({"key": key, "value": value})
 
+        tag_tech = self._extract_measuring_tech(content)
+        if tag_tech:
+            tags.extend(tag_tech)
         tags = [{"name": munge_tag(tag[:100])} for tag in tags]
 
         return (tags, extras, related_resources)
@@ -533,45 +535,17 @@ class OaipmhHarvester(HarvesterBase):
                 molecu = inchi.MolFromInchi(inchi_code)
                 smiles = rdmolfiles.MolToSmiles(molecu)
                 inchi_key = inchi.InchiToInchiKey(inchi_code)
-                exact_mass = round(Descriptors.MolWt(molecu),3)
+                exact_mass = Descriptors.MolWt(molecu)
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    if not filepath:
-                        Draw.MolToFile(molecu, filepath)
-                        log.debug("Molecule Image generated for %s", package_id)
-                    else:
-                        log.debug("Image Already exists")
+
+                    Draw.MolToFile(molecu, filepath)
+                    log.debug("Molecule Image generated for %s", package_id)
+                    #else:
+                     #   log.debug("Image Already exists")
                 except (FileExistsError, PermissionError):
                     pass
-
-
-        values = [package_id,json.dumps(standard_inchi), smiles, inchi_key, exact_mass]
-
-
-        # connect to db
-        con = psycopg2.connect(user=DB_USER,
-                               host=DB_HOST,
-                               password=DB_pwd,
-                               dbname=DB_NAME)
-
-        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-
-        # cursor for executation
-        cur = con.cursor()
-
-        # Check if the row already exists, if no then INSERT new row
-        cur.execute("SELECT * FROM molecule_data WHERE package_id = %s", (package_id,))
-        if cur.fetchone() is None:
-            cur.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s)", values)
-
-
-        # commit cursor
-        con.commit()
-        # close cursor
-        cur.close()
-        # close connection
-        con.close()
 
         log.debug("Moleculer Data loaded for %s", package['id'])
 
@@ -579,15 +553,18 @@ class OaipmhHarvester(HarvesterBase):
 
 
 
-    def _save_relationships(self, package, content):
+    def _save_relationships_to_db(self, package, content, smiles, inchi_key, exact_mass):
 
         """ Database Table have been generated for storing related resources
-        We connect to database and send those values directly  from harvested metadata"""
+        We connect to database and send those values directly  from harvested metadata
+        Molecule data is also sent from this function, storing into molecule_data table"""
 
         package_id =    package['id']
         relation_id =   content['relation']
         relationType =  content['relationType']
         relationIdType = content['relationIdType']
+
+        standard_inchi = content["inchi"]
 
         value = list(self.yield_func(package_id, relation_id,relationType,relationIdType))
 
@@ -612,14 +589,70 @@ class OaipmhHarvester(HarvesterBase):
                 cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)", val)
 
 
+        # Sending molecular information to database table(molecule_data table)
+        mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass]
+
+        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+        # cursor for execution
+        cur2 = con.cursor()
+
+        # Check if the row already exists, if no then INSERT new row
+        cur2.execute("SELECT * FROM molecule_data WHERE package_id = %s", (package_id,))
+        if cur2.fetchone() is None:
+            cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s)", mol_values)
+
         # commit cursor
         con.commit()
+
         # close cursor
         cur.close()
+        # close cursor
+        cur2.close()
+
         # close connection
         con.close()
 
         return "Data loaded to database"
+
+    def _extract_measuring_tech(self,content):
+
+        tag_names = None
+        package_title = str(content['title'])
+
+        #mass spectrometry
+        mass_Exp = re.compile(r'Mass')
+        mass_exp = re.compile(r'mass')
+        hnmr_exp =  re.compile(r'1H NMR')
+        cnmr_exp = re.compile(r'13C NMR')
+        ir_exp = re.compile(r'IR')
+        uv_exp = re.compile(r'UV')
+
+        if mass_exp.search(package_title) or mass_Exp.search(package_title):
+            tag_names = ['mass-spectrometry']
+            return tag_names
+
+        if hnmr_exp.search(package_title):
+            tag_names = ['1H-NMR']
+            return tag_names
+
+        if cnmr_exp.search(package_title):
+            tag_names = ['13C-NMR']
+            return tag_names
+
+        if ir_exp.search(package_title):
+            tag_names = ['IR']
+            return tag_names
+
+        if uv_exp.search(package_title):
+            tag_names = ['UV']
+            return tag_names
+
+        else:
+            return None
+        #tag_name = [{"name": munge_tag(tag[:100])} for tag in tag_names]
+
+
 
 
     def yield_func(self,package_id, relation_id,relationType,relationIdType):
