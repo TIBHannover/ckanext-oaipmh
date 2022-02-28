@@ -3,6 +3,7 @@ import json
 import re
 from urllib.error import HTTPError
 import traceback
+import os.path
 from datetime import datetime
 
 from ckan.model import Session
@@ -324,7 +325,8 @@ class OaipmhHarvester(HarvesterBase):
             package_dict["owner_org"] = owner_org
 
             # add license
-            package_dict["license_id"] = self._extract_license_id(content)
+            package_dict["license_id"] = self._extract_license_id(context=context,content=content)
+            log.debug(f'This is the license {package_dict["license_id"]}')
 
             # add resources
             url = self._get_possible_resource(harvest_object, content)
@@ -380,8 +382,6 @@ class OaipmhHarvester(HarvesterBase):
             Session.commit()
 
             log.debug("Finished record")
-
-            # TODO:This is just test
             log.debug(self._save_relationships_to_db(package_dict, content, smiles,inchi_key,exact_mass))
 
         except (Exception) as e:
@@ -406,8 +406,17 @@ class OaipmhHarvester(HarvesterBase):
     def _extract_author(self, content):
         return ", ".join(content["creator"])
 
-    def _extract_license_id(self, content):
-        return ", ".join(content["rights"])
+    def _extract_license_id(self, context,content):
+        package_license = None
+        content_license = ", ".join(content["rights"])
+        license_list = get_action('license_list')(context.copy(),{})
+        for license_name in license_list:
+
+            if content_license == license_name['id'] or content_license ==license_name['url'] or content_license == license_name['title']:
+                package_license = license_name['id']
+
+        return package_license
+
 
     def _extract_tags_and_extras(self, content):
         extras = []
@@ -539,13 +548,14 @@ class OaipmhHarvester(HarvesterBase):
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
+                    if os.path.isfile(filepath):
+                        log.debug("Image Already exists")
+                    else:
+                        Draw.MolToFile(molecu, filepath)
+                        log.debug("Molecule Image generated for %s", package_id)
 
-                    Draw.MolToFile(molecu, filepath)
-                    log.debug("Molecule Image generated for %s", package_id)
-                    #else:
-                     #   log.debug("Image Already exists")
-                except (FileExistsError, PermissionError):
-                    pass
+                except Exception as e:
+                    log.error(e)
 
         log.debug("Moleculer Data loaded for %s", package['id'])
 
@@ -651,8 +661,6 @@ class OaipmhHarvester(HarvesterBase):
         else:
             return None
         #tag_name = [{"name": munge_tag(tag[:100])} for tag in tag_names]
-
-
 
 
     def yield_func(self,package_id, relation_id,relationType,relationIdType):
