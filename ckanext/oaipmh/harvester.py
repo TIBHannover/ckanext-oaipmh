@@ -16,6 +16,7 @@ from ckan.lib.munge import munge_tag
 from ckan.lib.munge import munge_title_to_name
 from ckan.lib.search import rebuild
 from ckanext.harvest.model import HarvestObject
+from ckanext.harvest.logic.action.get import _get_sources_for_user
 
 import oaipmh.client
 from oaipmh.client import Client
@@ -42,6 +43,8 @@ DB_HOST = "localhost"
 DB_USER = "ckan_default"
 DB_NAME = "ckan_default"
 DB_pwd = "123456789"
+
+
 
 class OaipmhHarvester(HarvesterBase):
     """
@@ -86,19 +89,20 @@ class OaipmhHarvester(HarvesterBase):
                 force_http_get=self.force_http_get,
             )
 
+            # TODO: Getting frequency for next harvest
+            harvest_frequency = harvest_job.source.frequency
+            log.debug(harvest_frequency)
+
             client.identify()  # check if identify works
-            for header in self._identifier_generator(client):
+            for header in self._identifier_generator(client,harvest_job):
                 harvest_obj = HarvestObject(
                     guid=header.identifier(), job=harvest_job
                 )
-                # TODO: drop
-                # if harvest_obj.guid != '10.14272/VIZKKYMOUGQEKZ-UHFFFAOYSA-L.1':
-                    # continue
+
                 harvest_obj.save()
                 harvest_obj_ids.append(harvest_obj.id)
                 log.debug("Harvest obj %s created" % harvest_obj.id)
-                # TODO: drop
-                # return harvest_obj_ids
+
         except (HTTPError) as e:
             log.exception(
                 "Gather stage failed on %s (%s): %s, %s"
@@ -129,11 +133,12 @@ class OaipmhHarvester(HarvesterBase):
         )
         return harvest_obj_ids
 
-    def _identifier_generator(self, client):
+    def _identifier_generator(self, client,harvest_job):
         """
         pyoai generates the URL based on the given method parameters
         Therefore one may not use the set parameter if it is not there
         """
+        harvest_now = datetime.utcnow()
         if self.set_from or self.set_until:
             for header in client.listIdentifiers(metadataPrefix=self.md_format, set=self.set_spec,
                                                  from_= datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"), until= datetime.strptime(self.set_until,"%Y-%m-%dT%H:%M:%SZ")):
@@ -144,6 +149,9 @@ class OaipmhHarvester(HarvesterBase):
                                                  from_= datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"), until= datetime.strptime(self.set_until,"%Y-%m-%dT%H:%M:%SZ")):
                 yield header
 
+        elif harvest_job.source.frequency == 'DAILY':
+            for header in client.listIdentifiers(metadataPrefix = self.md_format, set=self.set_spec, from_= harvest_now):
+                yield header
         else:
             for header in client.listIdentifiers(
                 metadataPrefix=self.md_format
