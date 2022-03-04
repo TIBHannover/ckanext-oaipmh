@@ -17,7 +17,7 @@ from ckan.lib.munge import munge_tag
 from ckan.lib.munge import munge_title_to_name
 from ckan.lib.search import rebuild
 from ckanext.harvest.model import HarvestObject
-from ckanext.harvest.logic.action.get import _get_sources_for_user
+
 
 import oaipmh.client
 from oaipmh.client import Client
@@ -90,9 +90,8 @@ class OaipmhHarvester(HarvesterBase):
                 force_http_get=self.force_http_get,
             )
 
-            # TODO: Getting frequency for next harvest
+            # Getting frequency for next harvest
             harvest_frequency = harvest_job.source.frequency
-
 
             client.identify()  # check if identify works
             if harvest_frequency == 'DAILY':
