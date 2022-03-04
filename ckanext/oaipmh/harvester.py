@@ -5,6 +5,7 @@ from urllib.error import HTTPError
 import traceback
 import os.path
 from datetime import datetime
+from datetime import timedelta
 
 from ckan.model import Session
 from ckan.logic import get_action
@@ -91,17 +92,28 @@ class OaipmhHarvester(HarvesterBase):
 
             # TODO: Getting frequency for next harvest
             harvest_frequency = harvest_job.source.frequency
-            log.debug(harvest_frequency)
+
 
             client.identify()  # check if identify works
-            for header in self._identifier_generator(client,harvest_job):
-                harvest_obj = HarvestObject(
-                    guid=header.identifier(), job=harvest_job
-                )
+            if harvest_frequency == 'DAILY':
+                for header in self._daily_identifier_generator(client):
+                    harvest_obj = HarvestObject(
+                        guid=header.identifier(), job=harvest_job
+                    )
 
-                harvest_obj.save()
-                harvest_obj_ids.append(harvest_obj.id)
-                log.debug("Harvest obj %s created" % harvest_obj.id)
+                    harvest_obj.save()
+                    harvest_obj_ids.append(harvest_obj.id)
+                    log.debug("Harvest obj %s created" % harvest_obj.id)
+
+            else:
+                for header in self._identifier_generator(client):
+                    harvest_obj = HarvestObject(
+                        guid=header.identifier(), job=harvest_job
+                    )
+
+                    harvest_obj.save()
+                    harvest_obj_ids.append(harvest_obj.id)
+                    log.debug("Harvest obj %s created" % harvest_obj.id)
 
         except (HTTPError) as e:
             log.exception(
@@ -133,12 +145,12 @@ class OaipmhHarvester(HarvesterBase):
         )
         return harvest_obj_ids
 
-    def _identifier_generator(self, client,harvest_job):
+    def _identifier_generator(self, client):
         """
         pyoai generates the URL based on the given method parameters
         Therefore one may not use the set parameter if it is not there
         """
-        harvest_now = datetime.utcnow()
+
         if self.set_from or self.set_until:
             for header in client.listIdentifiers(metadataPrefix=self.md_format, set=self.set_spec,
                                                  from_= datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"), until= datetime.strptime(self.set_until,"%Y-%m-%dT%H:%M:%SZ")):
@@ -149,16 +161,13 @@ class OaipmhHarvester(HarvesterBase):
                                                  from_= datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"), until= datetime.strptime(self.set_until,"%Y-%m-%dT%H:%M:%SZ")):
                 yield header
 
-        elif harvest_job.source.frequency == 'DAILY':
-            for header in client.listIdentifiers(metadataPrefix = self.md_format, set=self.set_spec, from_= harvest_now):
-                yield header
         else:
             for header in client.listIdentifiers(
                 metadataPrefix=self.md_format
             ):
                 yield header
 
-    def _create_metadata_registry(self):
+    def _create_metadata_registry(self,):
         registry = MetadataRegistry()
         registry.registerReader("oai_dc", oai_dc_reader)
         registry.registerReader("oai_ddi", oai_ddi_reader)
@@ -166,6 +175,8 @@ class OaipmhHarvester(HarvesterBase):
         return registry
 
     def _set_config(self, source_config):
+
+
         try:
             config_json = json.loads(source_config)
             log.debug("config_json: %s" % config_json)
@@ -234,9 +245,7 @@ class OaipmhHarvester(HarvesterBase):
                 return False
 
             header, metadata, _ = record
-            # TODO: drop
-            # from lxml.etree import dump
-            # breakpoint()
+
             try:
                 metadata_modified = header.datestamp().isoformat()
             except:
@@ -677,3 +686,18 @@ class OaipmhHarvester(HarvesterBase):
         for p,q,r in zip(relation_id,relationType,relationIdType):
             value = (package_id, p,q,r )
             yield value
+
+    def _daily_identifier_generator(self, client):
+        """
+        pyoai generates the URL based on the given method parameters
+        Therefore one may not use the set parameter if it is not there
+        """
+
+        yesterday = datetime.today() - timedelta(days=1)
+        string_yesterday = yesterday.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        if self.set_from or self.set_until:
+            for header in client.listIdentifiers(metadataPrefix=self.md_format, set=self.set_spec,
+                                                 from_= datetime.strptime(string_yesterday, "%Y-%m-%dT%H:%M:%SZ"),
+                                                ):
+                yield header
