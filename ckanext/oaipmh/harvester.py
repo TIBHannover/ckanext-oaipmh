@@ -31,11 +31,10 @@ from rdkit.Chem import inchi
 from rdkit.Chem import rdmolfiles
 from rdkit.Chem import Draw
 from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-from psycopg2.extras import LoggingConnection
-from psycopg2.extras import LoggingCursor
 
 
 log = logging.getLogger(__name__)
@@ -90,29 +89,15 @@ class OaipmhHarvester(HarvesterBase):
                 force_http_get=self.force_http_get,
             )
 
-            # Getting frequency for next harvest
-            harvest_frequency = harvest_job.source.frequency
-
             client.identify()  # check if identify works
-            if harvest_frequency == 'DAILY':
-                for header in self._daily_identifier_generator(client):
-                    harvest_obj = HarvestObject(
-                        guid=header.identifier(), job=harvest_job
-                    )
 
-                    harvest_obj.save()
-                    harvest_obj_ids.append(harvest_obj.id)
-                    log.debug("Harvest obj %s created" % harvest_obj.id)
-
-            else:
-                for header in self._identifier_generator(client):
-                    harvest_obj = HarvestObject(
-                        guid=header.identifier(), job=harvest_job
-                    )
-
-                    harvest_obj.save()
-                    harvest_obj_ids.append(harvest_obj.id)
-                    log.debug("Harvest obj %s created" % harvest_obj.id)
+            for header in self._identifier_generator(client):
+                harvest_obj = HarvestObject(
+                    guid=header.identifier(), job=harvest_job
+                )
+                harvest_obj.save()
+                harvest_obj_ids.append(harvest_obj.id)
+                log.debug("Harvest obj %s created" % harvest_obj.id)
 
         except (HTTPError) as e:
             log.exception(
@@ -166,6 +151,7 @@ class OaipmhHarvester(HarvesterBase):
             ):
                 yield header
 
+
     def _create_metadata_registry(self,):
         registry = MetadataRegistry()
         registry.registerReader("oai_dc", oai_dc_reader)
@@ -175,6 +161,8 @@ class OaipmhHarvester(HarvesterBase):
 
     def _set_config(self, source_config):
 
+        now = datetime.now()
+        yesterday = now - timedelta(days=1)
 
         try:
             config_json = json.loads(source_config)
@@ -189,8 +177,8 @@ class OaipmhHarvester(HarvesterBase):
             self.user = "harvest"
             self.set_spec = config_json.get("set", None)
             self.md_format = config_json.get("metadata_prefix", "oai_dc")
-            self.set_from = config_json.get("from","1980-01-01T00:00:01Z")
-            self.set_until = config_json.get("until",str(datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")))
+            self.set_from = config_json.get("from",str(yesterday.strftime("%Y-%m-%dT%H:%M:%SZ")))
+            self.set_until = config_json.get("until",str(now.strftime("%Y-%m-%dT%H:%M:%SZ")))
             self.force_http_get = config_json.get("force_http_get", False)
 
         except ValueError:
@@ -356,7 +344,7 @@ class OaipmhHarvester(HarvesterBase):
 
 
             # create smiles code form inchi & add to extras table
-            smiles,inchi_key,exact_mass = self._get_chemical_info(package_dict,content)
+            smiles,inchi_key,exact_mass,mol_formula = self._get_chemical_info(package_dict,content)
             extras.append({"key":"smiles", "value": smiles})
             extras.append({"key":"inchi_key", "value": inchi_key})
             extras.append({"key": "exactmass", "value": exact_mass})
@@ -374,7 +362,6 @@ class OaipmhHarvester(HarvesterBase):
                         content["set_spec"], context.copy()
                     )
                 )
-
 
             # add groups from content
             groups.extend(
@@ -398,7 +385,7 @@ class OaipmhHarvester(HarvesterBase):
             Session.commit()
 
             log.debug("Finished record")
-            log.debug(self._save_relationships_to_db(package_dict, content, smiles,inchi_key,exact_mass))
+            log.debug(self._save_relationships_to_db(package_dict, content, smiles,inchi_key,exact_mass,mol_formula))
 
         except (Exception) as e:
             log.exception(e)
@@ -538,7 +525,6 @@ class OaipmhHarvester(HarvesterBase):
 
 # NFDI4Chem extensions for storing chemical data in respective tables
 
-
     def _get_chemical_info(self, package ,content):
 
         """ function to convert InChI code to smiles code.
@@ -552,6 +538,7 @@ class OaipmhHarvester(HarvesterBase):
         smiles = None
         inchi_key = None
         exact_mass = None
+        mol_formula = None
         standard_inchi = content["inchi"]
         package_id = package['id']
 
@@ -561,6 +548,8 @@ class OaipmhHarvester(HarvesterBase):
                 smiles = rdmolfiles.MolToSmiles(molecu)
                 inchi_key = inchi.InchiToInchiKey(inchi_code)
                 exact_mass = Descriptors.MolWt(molecu)
+                mol_formula = rdMolDescriptors.CalcMolFormula(molecu)
+
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
@@ -574,22 +563,24 @@ class OaipmhHarvester(HarvesterBase):
                     log.error(e)
 
         log.debug("Moleculer Data loaded for %s", package['id'])
+        log.debug(f"Molecular Formula {mol_formula}")
 
-        return smiles, inchi_key, exact_mass
+        return smiles, inchi_key, exact_mass, mol_formula
 
 
 
-    def _save_relationships_to_db(self, package, content, smiles, inchi_key, exact_mass):
+    def _save_relationships_to_db(self, package, content, smiles, inchi_key, exact_mass,mol_formula):
 
         """ Database Table have been generated for storing related resources
         We connect to database and send those values directly  from harvested metadata
         Molecule data is also sent from this function, storing into molecule_data table"""
 
+
+
         package_id =    package['id']
         relation_id =   content['relation']
         relationType =  content['relationType']
         relationIdType = content['relationIdType']
-
         standard_inchi = content["inchi"]
 
         value = list(self.yield_func(package_id, relation_id,relationType,relationIdType))
@@ -616,7 +607,8 @@ class OaipmhHarvester(HarvesterBase):
 
 
         # Sending molecular information to database table(molecule_data table)
-        mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass]
+
+        mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass,mol_formula]
 
         con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
@@ -626,8 +618,10 @@ class OaipmhHarvester(HarvesterBase):
         # Check if the row already exists, if no then INSERT new row
         cur2.execute("SELECT * FROM molecule_data WHERE package_id = %s", (package_id,))
         if cur2.fetchone() is None:
-            cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s)", mol_values)
-
+            cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)", mol_values)
+        else:
+            cur2.execute("INSERT INTO molecule_data(package_id,inchi,smiles,inchi_key,exact_mass,mol_formula) VALUES (%s,%s,%s,%s,%s,%s)",
+                         mol_values)
         # commit cursor
         con.commit()
 
@@ -685,18 +679,3 @@ class OaipmhHarvester(HarvesterBase):
         for p,q,r in zip(relation_id,relationType,relationIdType):
             value = (package_id, p,q,r )
             yield value
-
-    def _daily_identifier_generator(self, client):
-        """
-        pyoai generates the URL based on the given method parameters
-        Therefore one may not use the set parameter if it is not there
-        """
-
-        yesterday = datetime.today() - timedelta(days=1)
-        string_yesterday = yesterday.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-        if self.set_from or self.set_until:
-            for header in client.listIdentifiers(metadataPrefix=self.md_format, set=self.set_spec,
-                                                 from_= datetime.strptime(string_yesterday, "%Y-%m-%dT%H:%M:%SZ"),
-                                                ):
-                yield header
