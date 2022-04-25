@@ -36,7 +36,6 @@ To install ckanext-oaipmh:
     restart Supervisor and Nginx
 
 
-
 Make sure the ckanext-harvest extension is installed as well.
 
 **Important: You need to have a sysadmin user called "harvest" on your CKAN instance!**
