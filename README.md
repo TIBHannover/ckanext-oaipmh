@@ -25,7 +25,7 @@ To install ckanext-oaipmh:
     pip install -e . 
         pip install -r requirements.txt
 
-    Add 'oaipmh' to the ckan.plugins setting in your CKAN config file (by default the config file is located at /etc/ckan/default/ckan.ini).
+    Add 'oaipmh_harvester' to the ckan.plugins setting in your CKAN config file (by default the config file is located at /etc/ckan/default/ckan.ini).
 
     Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu:
 
