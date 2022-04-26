@@ -4,6 +4,12 @@ Original built from Open Search Data and made changes according to NFDI4Chem har
 
 [![Build Status](https://travis-ci.org/openresearchdata/ckanext-oaipmh.svg?branch=master)](https://travis-ci.org/openresearchdata/ckanext-oaipmh)
 
+This harvester has following additional aspects and features from the original harvester. 
+
+- oai_datacite metadata schema for DataCite 4.0 and above 
+- RDKit Module to generate cheminformatics.
+- Storing chemi-metadata to database tables (migrated tables) 
+
 ## Instructions
 
 ### Installation
@@ -56,6 +62,10 @@ Make sure the ckanext-harvest extension is installed as well.
   Please follow OAI-PMH guides line for using timestamps http://www.openarchives.org/OAI/openarchivesprotocol.html#DatestampsRequests
 - Save
 - on the harvest admin click **Reharvest**
+
+NOTE: if requirements if an error message. Ignore errors and install the rest. You can use below command to install each line seperately. 
+
+    cat requirements.txt | xargs -n 1 pip install
 
 ### Run the Harvester
 
