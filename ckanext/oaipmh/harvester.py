@@ -551,9 +551,9 @@ class OaipmhHarvester(HarvesterBase):
                 mol_formula = rdMolDescriptors.CalcMolFormula(molecu)
 
                 # upload images to folder
+                filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
+                image_file = Path(filepath)
                 try:
-                    filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    image_file = Path(filepath)
                     if image_file.is_file():
                         log.debug("Image Already exists")
                     else:
