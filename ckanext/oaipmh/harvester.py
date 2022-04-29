@@ -553,7 +553,7 @@ class OaipmhHarvester(HarvesterBase):
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    if os.path.isfile(filepath):
+                    if os.path.exists(filepath):
                         log.debug("Image Already exists")
                     else:
                         Draw.MolToFile(molecu, filepath)
