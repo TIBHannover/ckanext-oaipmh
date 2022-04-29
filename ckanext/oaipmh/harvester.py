@@ -3,7 +3,7 @@ import json
 import re
 from urllib.error import HTTPError
 import traceback
-import os.path
+from pathlib import Path
 from datetime import datetime
 from datetime import timedelta
 
@@ -553,7 +553,7 @@ class OaipmhHarvester(HarvesterBase):
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    if os.path.exists(filepath):
+                    if Path(filepath):
                         log.debug("Image Already exists")
                     else:
                         Draw.MolToFile(molecu, filepath)
