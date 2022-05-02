@@ -552,7 +552,7 @@ class OaipmhHarvester(HarvesterBase):
 
                 # upload images to folder
                 try:
-                    filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
+                    filepath = '/var/lib/ckan/default/storage/uploads/chemical' + str(inchi_key) + '.png'
                     open(filepath,'w')
                     Draw.MolToFile(molecu, filepath)
                     log.debug("Molecule Image generated for %s", package_id)
