@@ -556,6 +556,7 @@ class OaipmhHarvester(HarvesterBase):
                     if os.path.isfile(filepath):
                         log.debug("Image Already exists")
                     else:
+                        open(filepath,'w')
                         Draw.MolToFile(molecu, filepath)
                         log.debug("Molecule Image generated for %s", package_id)
                 except Exception as e:
