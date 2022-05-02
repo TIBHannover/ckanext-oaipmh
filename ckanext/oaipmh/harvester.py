@@ -3,7 +3,7 @@ import json
 import re
 from urllib.error import HTTPError
 import traceback
-from pathlib import Path
+import os
 from datetime import datetime
 from datetime import timedelta
 
