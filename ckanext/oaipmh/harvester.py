@@ -553,12 +553,9 @@ class OaipmhHarvester(HarvesterBase):
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    if os.path.isfile(filepath):
-                        log.debug("Image Already exists")
-                    else:
-                        open(filepath,'w')
-                        Draw.MolToFile(molecu, filepath)
-                        log.debug("Molecule Image generated for %s", package_id)
+                    open(filepath,'w')
+                    Draw.MolToFile(molecu, filepath)
+                    log.debug("Molecule Image generated for %s", package_id)
                 except Exception as e:
                     log.error(e) 
 
