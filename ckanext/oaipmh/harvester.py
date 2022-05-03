@@ -471,6 +471,8 @@ class OaipmhHarvester(HarvesterBase):
         for ident in candidates:
             if ident.startswith("http://") or ident.startswith("https://"):
                 url = ident
+            elif ident.startswith("10."):
+                url = "https://doi.org/" + ident
                 break
         return url
 
