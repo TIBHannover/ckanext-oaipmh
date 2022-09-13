@@ -162,7 +162,7 @@ class OaipmhHarvester(HarvesterBase):
     def _set_config(self, source_config):
 
         now = datetime.now()
-        yesterday = now - timedelta(days=1)
+        yesterday = now - timedelta(days=5)
 
         try:
             config_json = json.loads(source_config)
@@ -484,7 +484,7 @@ class OaipmhHarvester(HarvesterBase):
                 resource_format = "HTML"
             resources.append(
                 {
-                    "name": content["title"][0],
+                    "name": content["title"],
                     "resource_type": resource_format,
                     "format": resource_format,
                     "url": url,
@@ -574,8 +574,6 @@ class OaipmhHarvester(HarvesterBase):
         """ Database Table have been generated for storing related resources
         We connect to database and send those values directly  from harvested metadata
         Molecule data is also sent from this function, storing into molecule_data table"""
-
-
 
         package_id =    package['id']
         relation_id =   content['relation']
