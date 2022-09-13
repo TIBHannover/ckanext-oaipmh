@@ -3,7 +3,7 @@ import json
 import re
 from urllib.error import HTTPError
 import traceback
-import os.path
+import os
 from datetime import datetime
 from datetime import timedelta
 
@@ -471,6 +471,8 @@ class OaipmhHarvester(HarvesterBase):
         for ident in candidates:
             if ident.startswith("http://") or ident.startswith("https://"):
                 url = ident
+            elif ident.startswith("10."):
+                url = "https://doi.org/" + ident
                 break
         return url
 
@@ -553,14 +555,11 @@ class OaipmhHarvester(HarvesterBase):
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    if os.path.isfile(filepath):
-                        log.debug("Image Already exists")
-                    else:
-                        Draw.MolToFile(molecu, filepath)
-                        log.debug("Molecule Image generated for %s", package_id)
-
+                    open(filepath,'w')
+                    Draw.MolToFile(molecu, filepath)
+                    log.debug("Molecule Image generated for %s", package_id)
                 except Exception as e:
-                    log.error(e)
+                    log.error(e) 
 
         log.debug("Moleculer Data loaded for %s", package['id'])
         log.debug(f"Molecular Formula {mol_formula}")
