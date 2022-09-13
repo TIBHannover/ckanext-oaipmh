@@ -101,7 +101,7 @@ oai_dc_reader = MetadataReader(
 
 oai_datacite_reader = MetadataReader(
 fields={
-    'title':       ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:titles/datacite:title/text()'), #needtolookagain
+    'title':       ('textList', 'oai_datacite:record/oai_datacite:metadata/oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:titles/datacite:title/text()'), #needtolookagain
     'inchi':       ('textList','oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:titles/datacite:title[@titleType="AlternativeTitle"]/text()'),
     'creator':     ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:creators/datacite:creator/datacite:creatorName/text()'),
     'subject':     ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:subjects/datacite:subject/text()'),
