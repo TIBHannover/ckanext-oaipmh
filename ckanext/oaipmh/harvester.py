@@ -486,7 +486,7 @@ class OaipmhHarvester(HarvesterBase):
                 resource_format = "HTML"
             resources.append(
                 {
-                    "name": content["title"][0],
+                    "name": content["title"],
                     "resource_type": resource_format,
                     "format": resource_format,
                     "url": url,
