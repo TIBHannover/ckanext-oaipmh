@@ -101,25 +101,25 @@ oai_dc_reader = MetadataReader(
 
 oai_datacite_reader = MetadataReader(
 fields={
-    'title':       ('textList', 'oai_datacite:record/oai_datacite:metadata/oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:titles/datacite:title/text()'), #needtolookagain
-    'inchi':       ('textList','oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:titles/datacite:title[@titleType="AlternativeTitle"]/text()'),
-    'creator':     ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:creators/datacite:creator/datacite:creatorName/text()'),
-    'subject':     ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:subjects/datacite:subject/text()'),
-    'description': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:descriptions/datacite:description/text()'), #needtolookagain
-    'publisher':   ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:publisher/text()'),
-    'contributor': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:contributors/datacite:contributor/datacite:contributorName/text()'), #lookagain
-    'date':        ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:dates/datacite:date/text()'),
+    'title':       ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:titles/oai_datacite:title/text()'), #needtolookagain
+    'inchi':       ('textList','oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:titles/oai_datacite:title[@titleType="AlternativeTitle"]/text()'),
+    'creator':     ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:creators/oai_datacite:creator/oai_datacite:creatorName/text()'),
+    'subject':     ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:subjects/oai_datacite:subject/text()'),
+    'description': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:descriptions/oai_datacite:description/text()'), #needtolookagain
+    'publisher':   ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:publisher/text()'),
+    'contributor': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:contributors/oai_datacite:contributor/oai_datacite:contributorName/text()'), #lookagain
+    'date':        ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:dates/oai_datacite:date/text()'),
     #'type':        ('textList', '//resource/type/text()'),
     #'format':      ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource//text()'),
-    'identifier':  ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:identifier/text()'),
+    'identifier':  ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:identifier/text()'),
     #'source':      ('textList', '//resource/source/text()'),
-    'language':    ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:language/text()'),
-    'relation':    ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:relatedIdentifiers/datacite:relatedIdentifier/text()'),
-    'relationType': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:relatedIdentifiers/datacite:relatedIdentifier/@relationType'),
-    'relationIdType': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:relatedIdentifiers/datacite:relatedIdentifier/@relatedIdentifierType'),
+    'language':    ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:language/text()'),
+    'relation':    ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:relatedIdentifiers/oai_datacite:relatedIdentifier/text()'),
+    'relationType': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:relatedIdentifiers/oai_datacite:relatedIdentifier/@relationType'),
+    'relationIdType': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:relatedIdentifiers/oai_datacite:relatedIdentifier/@relatedIdentifierType'),
     #'coverage':    ('textList', '//resource/coverage/text()'),
-    'rights':      ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:rightsList/datacite:rights/text()'),
-    'publicationYear': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/datacite:resource/datacite:publicationYear/text()')
+    'rights':      ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:rightsList/oai_datacite:rights/text()'),
+    'publicationYear': ('textList', 'oai_datacite:oai_datacite/oai_datacite:payload/oai_datacite:resource/oai_datacite:publicationYear/text()')
     },
     namespaces={
         'oai' : 'http://www.openarchives.org/OAI/2.0/',
