@@ -130,8 +130,6 @@ class OaipmhHarvester(HarvesterBase):
             % len(harvest_obj_ids)
         )
 
-
-
         return harvest_obj_ids
 
     def _identifier_generator(self, client):
@@ -205,10 +203,13 @@ class OaipmhHarvester(HarvesterBase):
                 self.set_from = config_json.get("from", str(weekly.strftime("%Y-%m-%dT%H:%M:%SZ")))
 
             self.set_until = config_json.get("until", str(now.strftime("%Y-%m-%dT%H:%M:%SZ")))
+            log.debug(f"passed from {self.set_from}")
+            log.debug(f"passed  until {self.set_until}")
+
         except ValueError:
             pass
-        log.debug(f"passed from {self.set_from}")
-        log.debug(f"passed  until {self.set_until}" )
+
+
 
     def fetch_stage(self, harvest_object):
         """
