@@ -51,7 +51,7 @@ class OaipmhHarvester(HarvesterBase):
     """
     OAI-PMH Harvester for DataCite Metadata and repositories
     """
-    # TODO: Check weather vaild or not
+    # TODO: Check weather vaild or not!
 
     def info(self):
         """
