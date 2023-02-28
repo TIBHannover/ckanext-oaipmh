@@ -16,7 +16,7 @@ from ckanext.harvest.harvesters.base import HarvesterBase
 from ckan.lib.munge import munge_tag
 from ckan.lib.munge import munge_title_to_name
 from ckan.lib.search import rebuild
-from ckanext.harvest.model import HarvestObject
+from ckanext.harvest.model import HarvestObject, UPDATE_FREQUENCIES
 
 
 import oaipmh.client
@@ -26,6 +26,7 @@ from oaipmh.metadata import MetadataRegistry
 from ckanext.oaipmh.metadata import oai_ddi_reader
 from ckanext.oaipmh.metadata import oai_dc_reader
 from ckanext.oaipmh.metadata import oai_datacite_reader
+
 
 from rdkit.Chem import inchi
 from rdkit.Chem import rdmolfiles
@@ -48,7 +49,7 @@ DB_pwd = "123456789"
 
 class OaipmhHarvester(HarvesterBase):
     """
-    OAI-PMH Harvester
+    OAI-PMH Harvester for DataCite Metadata and repositories
     """
     # TODO: Check weather vaild or not
 
@@ -58,8 +59,8 @@ class OaipmhHarvester(HarvesterBase):
         """
         return {
             "name": "oai_pmh",
-            "title": "OAI-PMH Harvester",
-            "description": "Harvester for OAI-PMH data sources",
+            "title": "Datacite OAI Harvester",
+            "description": "Harvester for OAI-PMH DataCite metadata ",
         }
 
     def gather_stage(self, harvest_job):
@@ -78,6 +79,7 @@ class OaipmhHarvester(HarvesterBase):
         :returns: A list of HarvestObject ids
         """
         log.debug("in gather stage: %s" % harvest_job.source.url)
+        log.debug("with updating frequency: %s" % harvest_job.source.frequecny)
         try:
             harvest_obj_ids = []
             registry = self._create_metadata_registry()
@@ -127,6 +129,9 @@ class OaipmhHarvester(HarvesterBase):
             "Gather stage successfully finished with %s harvest objects"
             % len(harvest_obj_ids)
         )
+
+
+
         return harvest_obj_ids
 
     def _identifier_generator(self, client):
@@ -330,7 +335,7 @@ class OaipmhHarvester(HarvesterBase):
 
             # add license
             package_dict["license_id"] = self._extract_license_id(context=context,content=content)
-            log.debug(f'This is the license {package_dict["license_id"]}')
+
 
             # add resources
             url = self._get_possible_resource(harvest_object, content)
