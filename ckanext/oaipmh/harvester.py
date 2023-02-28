@@ -79,7 +79,7 @@ class OaipmhHarvester(HarvesterBase):
         :returns: A list of HarvestObject ids
         """
         log.debug("in gather stage: %s" % harvest_job.source.url)
-        log.debug("with updating frequency: %s" % harvest_job.source.frequecny)
+        log.debug("with updating frequency: %s" % harvest_job.source.frequency)
         try:
             harvest_obj_ids = []
             registry = self._create_metadata_registry()
