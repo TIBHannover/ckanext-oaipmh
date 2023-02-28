@@ -83,7 +83,7 @@ class OaipmhHarvester(HarvesterBase):
         try:
             harvest_obj_ids = []
             registry = self._create_metadata_registry()
-            self._set_config(harvest_job.source.config)
+            self._set_config(harvest_job.source.config,harvest_job.source.frequency)
             client = oaipmh.client.Client(
                 harvest_job.source.url,
                 registry,
@@ -164,10 +164,13 @@ class OaipmhHarvester(HarvesterBase):
         registry.registerReader("oai_datacite", oai_datacite_reader)
         return registry
 
-    def _set_config(self, source_config):
+    def _set_config(self, source_config, frequency):
 
         now = datetime.now()
-        yesterday = now - timedelta(days=5)
+        daily = now - timedelta(days=1)
+        weekly = now - timedelta(days=5)
+        monthly = now - timedelta(days=30)
+        biweekly = now - timedelta(days=14)
 
         try:
             config_json = json.loads(source_config)
@@ -182,12 +185,28 @@ class OaipmhHarvester(HarvesterBase):
             self.user = "harvest"
             self.set_spec = config_json.get("set", None)
             self.md_format = config_json.get("metadata_prefix", "oai_dc")
-            self.set_from = config_json.get("from",str(yesterday.strftime("%Y-%m-%dT%H:%M:%SZ")))
-            self.set_until = config_json.get("until",str(now.strftime("%Y-%m-%dT%H:%M:%SZ")))
             self.force_http_get = config_json.get("force_http_get", False)
 
+            if frequency == 'DAILY':
+                self.set_from = config_json.get("from", str(daily.strftime("%Y-%m-%dT%H:%M:%SZ")))
+
+            elif frequency == 'WEEKLY':
+                self.set_from = config_json.get("from", str(weekly.strftime("%Y-%m-%dT%H:%M:%SZ")))
+
+            elif frequency == 'MONTHLY':
+                self.set_from = config_json.get("from", str(monthly.strftime("%Y-%m-%dT%H:%M:%SZ")))
+
+            elif frequency == 'BIWEEKLY':
+                self.set_from = config_json.get("from", str(biweekly.strftime("%Y-%m-%dT%H:%M:%SZ")))
+
+            else:
+                self.set_from = config_json.get("from", str(weekly.strftime("%Y-%m-%dT%H:%M:%SZ")))
+
+            self.set_until = config_json.get("until", str(now.strftime("%Y-%m-%dT%H:%M:%SZ")))
         except ValueError:
             pass
+        log.debug(f"passed from {self.set_from}")
+        log.debug(f"passed  until {self.set_until}" )
 
     def fetch_stage(self, harvest_object):
         """
