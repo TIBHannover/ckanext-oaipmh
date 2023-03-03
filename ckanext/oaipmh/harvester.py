@@ -164,8 +164,10 @@ class OaipmhHarvester(HarvesterBase):
 
     def _set_config(self, source_config, frequency):
 
-        ''' configuration from GUI is being added here.
-        This function also checks which frequency with which harvest process would be proceeded'''
+        """
+        Configuration from GUI is being added here.
+        This function also checks which frequency with which harvest process would be proceeded
+        """
         now = datetime.now()
         default = now - timedelta(days=180)
         daily = now - timedelta(days=1)
