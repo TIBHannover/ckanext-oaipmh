@@ -230,7 +230,7 @@ class OaipmhHarvester(HarvesterBase):
         """
         log.debug("in fetch stage: %s" % harvest_object.guid)
         try:
-            self._set_config(harvest_object.job.source.config)
+            self._set_config(harvest_object.job.source.config,harvest_object.job.source.frequency)
             registry = self._create_metadata_registry()
             client = oaipmh.client.Client(
                 harvest_object.job.source.url,
