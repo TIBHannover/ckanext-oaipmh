@@ -326,7 +326,7 @@ class OaipmhHarvester(HarvesterBase):
             return False
 
         try:
-            self._set_config(harvest_object.job.source.config)
+            self._set_config(harvest_object.job.source.config,harvest_object.job.source.frequency)
             context = {
                 "model": model,
                 "session": Session,
