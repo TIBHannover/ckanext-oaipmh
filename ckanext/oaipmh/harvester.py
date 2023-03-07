@@ -111,6 +111,8 @@ class OaipmhHarvester(HarvesterBase):
                 harvest_job,
             )
             return None
+            pass
+
         except (Exception) as e:
             log.exception(
                 "Gather stage failed on %s: %s"
@@ -125,11 +127,12 @@ class OaipmhHarvester(HarvesterBase):
                 harvest_job,
             )
             return None
+            pass
+
         log.debug(
             "Gather stage successfully finished with %s harvest objects"
             % len(harvest_obj_ids)
         )
-
         return harvest_obj_ids
 
     def _identifier_generator(self, client):
