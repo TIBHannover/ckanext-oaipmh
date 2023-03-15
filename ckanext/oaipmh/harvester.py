@@ -170,7 +170,9 @@ class OaipmhHarvester(HarvesterBase):
 
         """
         Configuration from GUI is being added here.
-        This function also checks which frequency with which harvest process would be proceeded
+        This function also checks which frequency with which harvest process would be proceeded.
+
+        It also checks weather the date and time mentioned and acts accordingly
         """
         now = datetime.now()
         default = now - timedelta(days=180)
