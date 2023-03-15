@@ -49,7 +49,8 @@ DB_pwd = "123456789"
 
 class OaipmhHarvester(HarvesterBase):
     """
-    OAI-PMH Harvester for DataCite Metadata and repositories
+    OAI-PMH Harvester for DataCite Metadata and repositories!
+
     """
     # TODO: Check weather vaild or not!
 
