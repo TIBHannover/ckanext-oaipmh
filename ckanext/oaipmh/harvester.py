@@ -603,7 +603,6 @@ class OaipmhHarvester(HarvesterBase):
         return smiles, inchi_key, exact_mass, mol_formula
 
 
-
     def _save_relationships_to_db(self, package, content, smiles, inchi_key, exact_mass,mol_formula):
 
         """ Database Table have been generated for storing related resources
