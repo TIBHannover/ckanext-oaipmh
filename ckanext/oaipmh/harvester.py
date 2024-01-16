@@ -77,7 +77,7 @@ class OaipmhHarvester(HarvesterBase):
         """
         log.debug("in gather stage: %s" % harvest_job.source.url)
         log.debug("with updating frequency: %s" % harvest_job.source.frequency)
-        log.debug("This is strictly OAI-PMH")
+        log.debug("This is strictly OAI-PMH ")
 
         try:
             harvest_obj_ids = []
@@ -570,27 +570,25 @@ class OaipmhHarvester(HarvesterBase):
         inchi_key = None
         exact_mass = None
         mol_formula = None
+        standard_inchi = content["inchi"]
         package_id = package['id']
 
-        if content["inchi"]:
-            standard_inchi = content["inchi"]
+        for inchi_code in standard_inchi:
+            if inchi_code.startswith('InChI'):
+                molecu = inchi.MolFromInchi(inchi_code)
+                smiles = rdmolfiles.MolToSmiles(molecu)
+                inchi_key = inchi.InchiToInchiKey(inchi_code)
+                exact_mass = Descriptors.MolWt(molecu)
+                mol_formula = rdMolDescriptors.CalcMolFormula(molecu)
 
-            for inchi_code in standard_inchi:
-                if inchi_code.startswith('InChI'):
-                    molecu = inchi.MolFromInchi(inchi_code)
-                    smiles = rdmolfiles.MolToSmiles(molecu)
-                    inchi_key = inchi.InchiToInchiKey(inchi_code)
-                    exact_mass = Descriptors.MolWt(molecu)
-                    mol_formula = rdMolDescriptors.CalcMolFormula(molecu)
-
-                    # upload images to folder
-                    try:
-                        filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                        open(filepath, 'w')
-                        Draw.MolToFile(molecu, filepath)
-                        log.debug("Molecule Image generated for %s", package_id)
-                    except Exception as e:
-                        log.error(e)
+                # upload images to folder
+                try:
+                    filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
+                    open(filepath, 'w')
+                    Draw.MolToFile(molecu, filepath)
+                    log.debug("Molecule Image generated for %s", package_id)
+                except Exception as e:
+                    log.error(e)
 
         log.debug("Moleculer Data loaded for %s", package['id'])
         log.debug(f"Molecular Formula {mol_formula}")
@@ -607,59 +605,58 @@ class OaipmhHarvester(HarvesterBase):
         relation_id = content['relation']
         relationType = content['relationType']
         relationIdType = content['relationIdType']
-        if content["inchi"]:
-            standard_inchi = content["inchi"]
+        standard_inchi = content["inchi"]
 
-            value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
+        value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
 
-            # connect to db
-            con = psycopg2.connect(user=DB_USER,
-                                   host=DB_HOST,
-                                   password=DB_pwd,
-                                   dbname=DB_NAME)
+        # connect to db
+        con = psycopg2.connect(user=DB_USER,
+                               host=DB_HOST,
+                               password=DB_pwd,
+                               dbname=DB_NAME)
 
-            con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-            # Cursor
-            cur = con.cursor()
+        # Cursor
+        cur = con.cursor()
 
-            # Check if the row already exists, if not then INSERT
-            for val in value:
-                cur.execute(
-                    "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0], val[1],))
+        # Check if the row already exists, if not then INSERT
+        for val in value:
+            cur.execute(
+                "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0], val[1],))
 
-                if cur.fetchone() is None:
-                    cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)",
-                                val)
+            if cur.fetchone() is None:
+                cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)",
+                            val)
 
-            # Sending molecular information to database table(molecule_data table)
+        # Sending molecular information to database table(molecule_data table)
 
-            mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass, mol_formula]
+        mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass, mol_formula]
 
-            con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-            # cursor for execution
-            cur2 = con.cursor()
+        # cursor for execution
+        cur2 = con.cursor()
 
-            # Check if the row already exists, if no then INSERT new row
-            cur2.execute("SELECT * FROM molecules WHERE package_id = %s", (package_id,))
-            if cur2.fetchone() is None:
-                cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)",
-                             mol_values)
-            else:
-                cur2.execute(
-                    "INSERT INTO molecule_data(package_id,inchi,smiles,inchi_key,exact_mass,mol_formula) VALUES (%s,%s,%s,%s,%s,%s)",
-                    mol_values)
-            # commit cursor
-            con.commit()
+        # Check if the row already exists, if no then INSERT new row
+        cur2.execute("SELECT * FROM molecules WHERE package_id = %s", (package_id,))
+        if cur2.fetchone() is None:
+            cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)",
+                         mol_values)
+        else:
+            cur2.execute(
+                "INSERT INTO molecule_data(package_id,inchi,smiles,inchi_key,exact_mass,mol_formula) VALUES (%s,%s,%s,%s,%s,%s)",
+                mol_values)
+        # commit cursor
+        con.commit()
 
-            # close cursor
-            cur.close()
-            # close cursor
-            cur2.close()
+        # close cursor
+        cur.close()
+        # close cursor
+        cur2.close()
 
-            # close connection
-            con.close()
+        # close connection
+        con.close()
 
         return "Data loaded to database"
 
