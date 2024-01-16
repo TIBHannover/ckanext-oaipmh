@@ -570,25 +570,27 @@ class OaipmhHarvester(HarvesterBase):
         inchi_key = None
         exact_mass = None
         mol_formula = None
-        standard_inchi = content["inchi"]
         package_id = package['id']
 
-        for inchi_code in standard_inchi:
-            if inchi_code.startswith('InChI'):
-                molecu = inchi.MolFromInchi(inchi_code)
-                smiles = rdmolfiles.MolToSmiles(molecu)
-                inchi_key = inchi.InchiToInchiKey(inchi_code)
-                exact_mass = Descriptors.MolWt(molecu)
-                mol_formula = rdMolDescriptors.CalcMolFormula(molecu)
+        if content["inchi"]:
+            standard_inchi = content["inchi"]
 
-                # upload images to folder
-                try:
-                    filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    open(filepath, 'w')
-                    Draw.MolToFile(molecu, filepath)
-                    log.debug("Molecule Image generated for %s", package_id)
-                except Exception as e:
-                    log.error(e)
+            for inchi_code in standard_inchi:
+                if inchi_code.startswith('InChI'):
+                    molecu = inchi.MolFromInchi(inchi_code)
+                    smiles = rdmolfiles.MolToSmiles(molecu)
+                    inchi_key = inchi.InchiToInchiKey(inchi_code)
+                    exact_mass = Descriptors.MolWt(molecu)
+                    mol_formula = rdMolDescriptors.CalcMolFormula(molecu)
+
+                    # upload images to folder
+                    try:
+                        filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
+                        open(filepath, 'w')
+                        Draw.MolToFile(molecu, filepath)
+                        log.debug("Molecule Image generated for %s", package_id)
+                    except Exception as e:
+                        log.error(e)
 
         log.debug("Moleculer Data loaded for %s", package['id'])
         log.debug(f"Molecular Formula {mol_formula}")
