@@ -82,6 +82,7 @@ class OaipmhHarvester(HarvesterBase):
         log.debug("in gather stage: %s" % harvest_job.source.url)
         log.debug("with updating frequency: %s" % harvest_job.source.frequency)
         log.debug("This is strictly OAI-PMH ")
+
         try:
             harvest_obj_ids = []
             registry = self._create_metadata_registry()
