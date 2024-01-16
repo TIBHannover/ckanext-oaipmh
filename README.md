@@ -52,7 +52,7 @@ Make sure the ckanext-harvest extension is installed as well.
 - with the web browser go to `<your ckan url>/harvest/new`
 - as URL fill in the base URL of an OAI-PMH conforming repository, e.g. https://oai.datacite.org/oai/
 
-- select **Source type** `OAI-PMH Harvester`
+- select **Source type** `Dublin Core Harvester` or `DataCite OAI Harvester`
 - if your OAI-PMH needs credentials, add the following to the "Configuration" section: `{"username": "foo", "password": "bar" } `
 - if you only want to harvest a specific set, add the following to the "Configuration" section: `{"set": "baz"} `
 - if you want to harvest data in a specific metadata format, add the following to the "Configuration" section: `{"metadata_prefix": "oai_dc"}` (currently `oai_datacite`,`oai_dc', `oai_ddi` are supported)
