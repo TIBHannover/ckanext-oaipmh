@@ -11,13 +11,11 @@ from ckan.model import Session
 from ckan.logic import get_action
 from ckan import model
 
-
 from ckanext.harvest.harvesters.base import HarvesterBase
 from ckan.lib.munge import munge_tag
 from ckan.lib.munge import munge_title_to_name
 from ckan.lib.search import rebuild
 from ckanext.harvest.model import HarvestObject, UPDATE_FREQUENCIES
-
 
 import oaipmh.client
 from oaipmh.client import Client
@@ -26,7 +24,6 @@ from oaipmh.metadata import MetadataRegistry
 from ckanext.oaipmh.metadata import oai_ddi_reader
 from ckanext.oaipmh.metadata import oai_dc_reader
 from ckanext.oaipmh.metadata import oai_datacite_reader
-
 
 from rdkit.Chem import inchi
 from rdkit.Chem import rdmolfiles
@@ -37,7 +34,6 @@ from rdkit.Chem import rdMolDescriptors
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-
 log = logging.getLogger(__name__)
 
 DB_HOST = "localhost"
@@ -46,12 +42,12 @@ DB_NAME = "ckan_default"
 DB_pwd = "123456789"
 
 
-
 class OaipmhHarvester(HarvesterBase):
     """
     OAI-PMH Harvester for DataCite Metadata and repositories!
 
     """
+
     # TODO: Check weather vaild or not!
 
     def info(self):
@@ -81,12 +77,12 @@ class OaipmhHarvester(HarvesterBase):
         """
         log.debug("in gather stage: %s" % harvest_job.source.url)
         log.debug("with updating frequency: %s" % harvest_job.source.frequency)
-        log.debug("This is strictly OAI-PMH ")
+        log.debug("This is strictly OAI-PMH")
 
         try:
             harvest_obj_ids = []
             registry = self._create_metadata_registry()
-            self._set_config(harvest_job.source.config,harvest_job.source.frequency)
+            self._set_config(harvest_job.source.config, harvest_job.source.frequency)
             client = oaipmh.client.Client(
                 harvest_job.source.url,
                 registry,
@@ -146,22 +142,23 @@ class OaipmhHarvester(HarvesterBase):
 
         if self.set_from or self.set_until:
             for header in client.listIdentifiers(metadataPrefix=self.md_format, set=self.set_spec,
-                                                 from_= datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"), until= datetime.strptime(self.set_until,"%Y-%m-%dT%H:%M:%SZ")):
+                                                 from_=datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"),
+                                                 until=datetime.strptime(self.set_until, "%Y-%m-%dT%H:%M:%SZ")):
                 yield header
 
         elif self.set_spec:
             for header in client.listIdentifiers(metadataPrefix=self.md_format, set=self.set_spec,
-                                                 from_= datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"), until= datetime.strptime(self.set_until,"%Y-%m-%dT%H:%M:%SZ")):
+                                                 from_=datetime.strptime(self.set_from, "%Y-%m-%dT%H:%M:%SZ"),
+                                                 until=datetime.strptime(self.set_until, "%Y-%m-%dT%H:%M:%SZ")):
                 yield header
 
         else:
             for header in client.listIdentifiers(
-                metadataPrefix=self.md_format
+                    metadataPrefix=self.md_format
             ):
                 yield header
 
-
-    def _create_metadata_registry(self,):
+    def _create_metadata_registry(self, ):
         registry = MetadataRegistry()
         registry.registerReader("oai_dc", oai_dc_reader)
         registry.registerReader("oai_ddi", oai_ddi_reader)
@@ -220,8 +217,6 @@ class OaipmhHarvester(HarvesterBase):
         except ValueError:
             pass
 
-
-
     def fetch_stage(self, harvest_object):
         """
         The fetch stage will receive a HarvestObject object and will be
@@ -238,7 +233,7 @@ class OaipmhHarvester(HarvesterBase):
         """
         log.debug("in fetch stage: %s" % harvest_object.guid)
         try:
-            self._set_config(harvest_object.job.source.config,harvest_object.job.source.frequency)
+            self._set_config(harvest_object.job.source.config, harvest_object.job.source.frequency)
             registry = self._create_metadata_registry()
             client = oaipmh.client.Client(
                 harvest_object.job.source.url,
@@ -334,7 +329,7 @@ class OaipmhHarvester(HarvesterBase):
             return False
 
         try:
-            self._set_config(harvest_object.job.source.config,harvest_object.job.source.frequency)
+            self._set_config(harvest_object.job.source.config, harvest_object.job.source.frequency)
             context = {
                 "model": model,
                 "session": Session,
@@ -367,8 +362,7 @@ class OaipmhHarvester(HarvesterBase):
             package_dict["owner_org"] = owner_org
 
             # add license
-            package_dict["license_id"] = self._extract_license_id(context=context,content=content)
-
+            package_dict["license_id"] = self._extract_license_id(context=context, content=content)
 
             # add resources
             url = self._get_possible_resource(harvest_object, content)
@@ -380,13 +374,11 @@ class OaipmhHarvester(HarvesterBase):
             package_dict["tags"] = tags
             package_dict["extras"] = extras
 
-
             # create smiles code form inchi & add to extras table
-            smiles,inchi_key,exact_mass,mol_formula = self._get_chemical_info(package_dict,content)
-            extras.append({"key":"smiles", "value": smiles})
-            extras.append({"key":"inchi_key", "value": inchi_key})
+            smiles, inchi_key, exact_mass, mol_formula = self._get_chemical_info(package_dict, content)
+            extras.append({"key": "smiles", "value": smiles})
+            extras.append({"key": "inchi_key", "value": inchi_key})
             extras.append({"key": "exactmass", "value": exact_mass})
-
 
             # groups aka projects
             groups = []
@@ -423,7 +415,7 @@ class OaipmhHarvester(HarvesterBase):
             Session.commit()
 
             log.debug("Finished record")
-            log.debug(self._save_relationships_to_db(package_dict, content, smiles,inchi_key,exact_mass,mol_formula))
+            log.debug(self._save_relationships_to_db(package_dict, content, smiles, inchi_key, exact_mass, mol_formula))
 
         except (Exception) as e:
             log.exception(e)
@@ -447,17 +439,17 @@ class OaipmhHarvester(HarvesterBase):
     def _extract_author(self, content):
         return ", ".join(content["creator"])
 
-    def _extract_license_id(self, context,content):
+    def _extract_license_id(self, context, content):
         package_license = None
         content_license = ", ".join(content["rights"])
-        license_list = get_action('license_list')(context.copy(),{})
+        license_list = get_action('license_list')(context.copy(), {})
         for license_name in license_list:
 
-            if content_license == license_name['id'] or content_license ==license_name['url'] or content_license == license_name['title']:
+            if content_license == license_name['id'] or content_license == license_name['url'] or content_license == \
+                    license_name['title']:
                 package_license = license_name['id']
 
         return package_license
-
 
     def _extract_tags_and_extras(self, content):
         extras = []
@@ -474,14 +466,14 @@ class OaipmhHarvester(HarvesterBase):
                     tags.extend(value.split(";"))
                 continue
             if value and type(value) is list:
-                    # To harvest related and relationType without raising any exceptions
-                    if key == 'relation' or key == 'relationType':
-                        try:
-                            value = value
-                        except Exception:
-                            pass
-                    else:
-                        value = value[0]
+                # To harvest related and relationType without raising any exceptions
+                if key == 'relation' or key == 'relationType':
+                    try:
+                        value = value
+                    except Exception:
+                        pass
+                else:
+                    value = value[0]
             if not value:
                 value = None
             if key.endswith("date") and value:
@@ -562,10 +554,9 @@ class OaipmhHarvester(HarvesterBase):
         log.debug("Group ids: %s" % group_ids)
         return group_ids
 
+    # NFDI4Chem extensions for storing chemical data in respective tables
 
-# NFDI4Chem extensions for storing chemical data in respective tables
-
-    def _get_chemical_info(self, package ,content):
+    def _get_chemical_info(self, package, content):
 
         """ function to convert InChI code to smiles code.
         This uses rdkit library to  convert available InChI to SMILES. (Chemoinformatic library)
@@ -574,7 +565,7 @@ class OaipmhHarvester(HarvesterBase):
         We use psycopg2 to connect to database and INSERT data using SQL query
 
         """
-        #global values
+        # global values
         smiles = None
         inchi_key = None
         exact_mass = None
@@ -593,38 +584,36 @@ class OaipmhHarvester(HarvesterBase):
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    open(filepath,'w')
+                    open(filepath, 'w')
                     Draw.MolToFile(molecu, filepath)
                     log.debug("Molecule Image generated for %s", package_id)
                 except Exception as e:
-                    log.error(e) 
+                    log.error(e)
 
         log.debug("Moleculer Data loaded for %s", package['id'])
         log.debug(f"Molecular Formula {mol_formula}")
 
         return smiles, inchi_key, exact_mass, mol_formula
 
-
-    def _save_relationships_to_db(self, package, content, smiles, inchi_key, exact_mass,mol_formula):
+    def _save_relationships_to_db(self, package, content, smiles, inchi_key, exact_mass, mol_formula):
 
         """ Database Table have been generated for storing related resources
         We connect to database and send those values directly  from harvested metadata
         Molecule data is also sent from this function, storing into molecule_data table"""
 
-        package_id =    package['id']
-        relation_id =   content['relation']
-        relationType =  content['relationType']
+        package_id = package['id']
+        relation_id = content['relation']
+        relationType = content['relationType']
         relationIdType = content['relationIdType']
         standard_inchi = content["inchi"]
 
-        value = list(self.yield_func(package_id, relation_id,relationType,relationIdType))
+        value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
 
-
-        #connect to db
-        con = psycopg2.connect(user = DB_USER,
-                                     host =  DB_HOST,
-                                     password = DB_pwd,
-                                     dbname = DB_NAME )
+        # connect to db
+        con = psycopg2.connect(user=DB_USER,
+                               host=DB_HOST,
+                               password=DB_pwd,
+                               dbname=DB_NAME)
 
         con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
@@ -634,15 +623,15 @@ class OaipmhHarvester(HarvesterBase):
         # Check if the row already exists, if not then INSERT
         for val in value:
             cur.execute(
-                "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0],val[1],))
+                "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0], val[1],))
 
             if cur.fetchone() is None:
-                cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)", val)
-
+                cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)",
+                            val)
 
         # Sending molecular information to database table(molecule_data table)
 
-        mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass,mol_formula]
+        mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass, mol_formula]
 
         con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
@@ -652,10 +641,12 @@ class OaipmhHarvester(HarvesterBase):
         # Check if the row already exists, if no then INSERT new row
         cur2.execute("SELECT * FROM molecules WHERE package_id = %s", (package_id,))
         if cur2.fetchone() is None:
-            cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)", mol_values)
-        else:
-            cur2.execute("INSERT INTO molecule_data(package_id,inchi,smiles,inchi_key,exact_mass,mol_formula) VALUES (%s,%s,%s,%s,%s,%s)",
+            cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)",
                          mol_values)
+        else:
+            cur2.execute(
+                "INSERT INTO molecule_data(package_id,inchi,smiles,inchi_key,exact_mass,mol_formula) VALUES (%s,%s,%s,%s,%s,%s)",
+                mol_values)
         # commit cursor
         con.commit()
 
@@ -669,15 +660,15 @@ class OaipmhHarvester(HarvesterBase):
 
         return "Data loaded to database"
 
-    def _extract_measuring_tech(self,content):
+    def _extract_measuring_tech(self, content):
 
         tag_names = None
         package_title = str(content['title'])
 
-        #mass spectrometry
+        # mass spectrometry
         mass_Exp = re.compile(r'Mass')
         mass_exp = re.compile(r'mass')
-        hnmr_exp =  re.compile(r'1H NMR')
+        hnmr_exp = re.compile(r'1H NMR')
         cnmr_exp = re.compile(r'13C NMR')
         ir_exp = re.compile(r'IR')
         uv_exp = re.compile(r'UV')
@@ -704,12 +695,11 @@ class OaipmhHarvester(HarvesterBase):
 
         else:
             return None
-        #tag_name = [{"name": munge_tag(tag[:100])} for tag in tag_names]
+        # tag_name = [{"name": munge_tag(tag[:100])} for tag in tag_names]
 
-
-    def yield_func(self,package_id, relation_id,relationType,relationIdType):
+    def yield_func(self, package_id, relation_id, relationType, relationIdType):
         # An yield function to return generator list values to make a single list of values
 
-        for p,q,r in zip(relation_id,relationType,relationIdType):
-            value = (package_id, p,q,r )
+        for p, q, r in zip(relation_id, relationType, relationIdType):
+            value = (package_id, p, q, r)
             yield value
