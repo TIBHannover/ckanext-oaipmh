@@ -60,7 +60,7 @@ class OaipmhHarvester(HarvesterBase):
         """
         return {
             "name": "oai_pmh",
-            "title": "Datacite OAI Harvester",
+            "title": "DataCite OAI Harvester",
             "description": "Harvester for OAI-PMH DataCite metadata ",
         }
 
@@ -81,6 +81,7 @@ class OaipmhHarvester(HarvesterBase):
         """
         log.debug("in gather stage: %s" % harvest_job.source.url)
         log.debug("with updating frequency: %s" % harvest_job.source.frequency)
+        log.debug("This is strictly OAI-PMH ")
         try:
             harvest_obj_ids = []
             registry = self._create_metadata_registry()
@@ -630,7 +631,7 @@ class OaipmhHarvester(HarvesterBase):
         cur = con.cursor()
 
         # Check if the row already exists, if not then INSERT
-        for val in  value:
+        for val in value:
             cur.execute(
                 "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0],val[1],))
 
@@ -648,7 +649,7 @@ class OaipmhHarvester(HarvesterBase):
         cur2 = con.cursor()
 
         # Check if the row already exists, if no then INSERT new row
-        cur2.execute("SELECT * FROM molecule_data WHERE package_id = %s", (package_id,))
+        cur2.execute("SELECT * FROM molecules WHERE package_id = %s", (package_id,))
         if cur2.fetchone() is None:
             cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)", mol_values)
         else:
