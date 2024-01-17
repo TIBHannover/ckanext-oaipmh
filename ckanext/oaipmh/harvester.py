@@ -375,10 +375,15 @@ class OaipmhHarvester(HarvesterBase):
             package_dict["extras"] = extras
 
             # create smiles code form inchi & add to extras table
-            smiles, inchi_key, exact_mass, mol_formula = self._get_chemical_info(package_dict, content)
-            extras.append({"key": "smiles", "value": smiles})
-            extras.append({"key": "inchi_key", "value": inchi_key})
-            extras.append({"key": "exactmass", "value": exact_mass})
+            try:
+                smiles, inchi_key, exact_mass, mol_formula = self._get_chemical_info(package_dict, content)
+            except Exception as e:
+                log.error(f"Failed to {e}")
+                pass
+                extras.append({"key": "smiles", "value": smiles})
+                extras.append({"key": "inchi_key", "value": inchi_key})
+                extras.append({"key": "exactmass", "value": exact_mass})
+
 
             # groups aka projects
             groups = []
