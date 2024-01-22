@@ -440,6 +440,9 @@ class OaipmhHarvester(HarvesterBase):
             "maintainer": "publisher",
             "maintainer_email": "maintainer_email",
             "url": "source",
+            "language": "language",
+            "metadata_modified": "metadata_modified"
+
         }
 
     def _extract_author(self, content):
