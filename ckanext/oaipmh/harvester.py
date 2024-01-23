@@ -650,9 +650,8 @@ class OaipmhHarvester(HarvesterBase):
             relation_value = mol_rel_data.get_mol_formula_by_package_id(package_id)
             # log.debug(f"Here is the relation {relation_value}")
 
+            # Related Resources of each dataset
             related_resources.create(package_id, relation_id, relationType, relationIdType, alternateName)
-
-            # TODO: Check if relationship exists or not.
 
             if not molecule_id:  # if there is no molecule at all, it inserts rows into molecules and molecule_rel_data dt
                 molecules.create(standard_inchi, smiles, inchi_key, exact_mass, mol_formula)
