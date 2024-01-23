@@ -631,7 +631,7 @@ class OaipmhHarvester(HarvesterBase):
         relationIdType = content['relationIdType']
         standard_inchi = content["inchi"][0]
 
-        value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
+        values = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
         alternateName = ''
 
         # name_list = []
@@ -652,8 +652,8 @@ class OaipmhHarvester(HarvesterBase):
 
             # Related Resources of each dataset
             try:
-                for val in value:
-                    related_resources.create(val, alternateName)
+                for val in values:
+                    related_resources.create(val + (None,))
                     log.debug(f"related_resources uploaded")
             except Exception as e:
                 log.error(e)
