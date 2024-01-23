@@ -632,10 +632,10 @@ class OaipmhHarvester(HarvesterBase):
         standard_inchi = content["inchi"][0]
 
         value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
-        alternateName = ''
+        # alternateName = ''
 
-        name_list = []
-        package_id = package['id']
+        # name_list = []
+        # package_id = package['id']
 
         try:
             standard_inchi = standard_inchi
@@ -647,14 +647,14 @@ class OaipmhHarvester(HarvesterBase):
 
             # Check if the row already exists, if not then INSERT
             molecule_id = molecules._get_inchi_from_db(inchi_key)
-            # log.debug(f"Current molecule_d  {molecule_id}")
+
             relation_value = mol_rel_data.get_mol_formula_by_package_id(package_id)
-            # log.debug(f"Here is the relation {relation_value}")
 
             # Related Resources of each dataset
             try:
-                related_resources.create(package_id, relation_id, relationType, relationIdType, alternateName)
-                log.debug(f"related_resources uploaded")
+                for val in value:
+                    related_resources.create(val)
+                    log.debug(f"related_resources uploaded")
             except Exception as e:
                 log.error(e)
 
