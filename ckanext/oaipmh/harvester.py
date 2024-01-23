@@ -629,7 +629,7 @@ class OaipmhHarvester(HarvesterBase):
         relation_id = content['relation']
         relationType = content['relationType']
         relationIdType = content['relationIdType']
-        standard_inchi = content["inchi"]
+        standard_inchi = content["inchi"][0]
 
         value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
         alternateName = ''
