@@ -412,9 +412,9 @@ class OaipmhHarvester(HarvesterBase):
             package_dict["groups"] = groups
 
             # allow sub-classes to add additional fields
-            package_dict = self._extract_additional_fields(
-                content, package_dict
-            )
+            # package_dict = self._extract_additional_fields(
+            #     content, package_dict
+            # )
 
             log.debug("Create/update package using dict: %s" % package_dict)
             self._create_or_update_package(
