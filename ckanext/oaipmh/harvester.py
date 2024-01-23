@@ -634,11 +634,11 @@ class OaipmhHarvester(HarvesterBase):
         log.debug(package)
 
         try:
-            standard_inchi = package['inchi']
-            inchi_key = package['inchi_key']
-            smiles = package['smiles']
-            exact_mass = package['exactmass']
-            mol_formula = package['mol_formula']
+            standard_inchi = standard_inchi
+            inchi_key = inchi_key
+            smiles = smiles
+            exact_mass = exact_mass
+            mol_formula = mol_formula
 
             # Check if the row already exists, if not then INSERT
             molecule_id = molecules._get_inchi_from_db(inchi_key)
