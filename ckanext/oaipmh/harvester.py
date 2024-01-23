@@ -653,7 +653,7 @@ class OaipmhHarvester(HarvesterBase):
             # Related Resources of each dataset
             try:
                 for val in value:
-                    related_resources.create(val)
+                    related_resources.create(val, alternateName=False)
                     log.debug(f"related_resources uploaded")
             except Exception as e:
                 log.error(e)
