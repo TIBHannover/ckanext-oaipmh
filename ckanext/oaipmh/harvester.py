@@ -580,7 +580,7 @@ class OaipmhHarvester(HarvesterBase):
     def _get_chemical_info(self, package, content):
 
         """ function to convert InChI code to smiles code.
-        This uses rdkit library to  convert available InChI to SMILES. (Chemoinformatic library)
+        This uses rdkit library to  convert available InChI to SMILES. (Chemo-informatics library)
 
         Database Table has been generated for molecule data.
         We use psycopg2 to connect to database and INSERT data using SQL query
@@ -632,10 +632,6 @@ class OaipmhHarvester(HarvesterBase):
         standard_inchi = content["inchi"][0]
 
         values = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
-        alternateName = ''
-
-        # name_list = []
-        # package_id = package['id']
 
         try:
             standard_inchi = standard_inchi
@@ -652,7 +648,6 @@ class OaipmhHarvester(HarvesterBase):
             # Related Resources of each dataset
 
             for val in values:
-                log.debug(f'{val[2]}')
                 try:
                     related_resources.create(val[0], val[1], val[2], val[3], None)
                     log.debug(f"related_resources uploaded")
