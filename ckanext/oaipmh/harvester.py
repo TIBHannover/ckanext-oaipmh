@@ -31,6 +31,9 @@ from rdkit.Chem import Draw
 from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 
+from ckanext.rdkit_visuals.models.molecule_tab import Molecules as molecules
+from ckanext.rdkit_visuals.models.molecule_rel import MolecularRelationData as mol_rel_data
+
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
@@ -422,6 +425,7 @@ class OaipmhHarvester(HarvesterBase):
             Session.commit()
 
             log.debug("Finished record")
+
             log.debug(self._save_relationships_to_db(package_dict, content, smiles, inchi_key, exact_mass, mol_formula))
 
         except (Exception) as e:
@@ -625,56 +629,101 @@ class OaipmhHarvester(HarvesterBase):
 
         value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
 
-        # connect to db
-        con = psycopg2.connect(user=DB_USER,
-                               host=DB_HOST,
-                               password=DB_pwd,
-                               dbname=DB_NAME)
+        name_list = []
+        package_id = package['id']
+        log.debug(package)
 
-        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        try:
+            standard_inchi = package['inchi']
+            inchi_key = package['inchi_key']
+            smiles = package['smiles']
+            exact_mass = package['exactmass']
+            mol_formula = package['mol_formula']
 
-        # Cursor
-        cur = con.cursor()
+            # Check if the row already exists, if not then INSERT
+            molecule_id = molecules._get_inchi_from_db(inchi_key)
+            log.debug(f"Current molecule_d  {molecule_id}")
+            relation_value = mol_rel_data.get_mol_formula_by_package_id(package_id)
+            log.debug(f"Here is the relation {relation_value}")
 
-        # Check if the row already exists, if not then INSERT
-        for val in value:
-            cur.execute(
-                "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0], val[1],))
+            # TODO: Check if relationship exists or not.
 
-            if cur.fetchone() is None:
-                cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)",
-                            val)
+            if not molecule_id:  # if there is no molecule at all, it inserts rows into molecules and molecule_rel_data dt
+                molecules.create(standard_inchi, smiles, inchi_key, exact_mass, mol_formula)
+                new_molecules_id = molecules._get_inchi_from_db(inchi_key)
+                new_molecules_id = new_molecules_id[0]
 
-        # Sending molecular information to database table(molecule_data table)
+                # Check if relationship exists
+                log.debug(f"New molecule {new_molecules_id}")
+                mol_rel_data.create(new_molecules_id, package_id)
+                log.debug('data sent to molecules and relation db')
 
-        mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass, mol_formula]
+            elif not relation_value:  # if the molecule exists, but the relation doesn't exist, it create the relation
+                # with molecule ID
+                log.debug("Relationship must be created")
+                mol_rel_data.create(molecule_id[0], package_id)
+                log.debug('data sent to mol_relation db')
+            else:  # if the both exists
+                log.debug('Nothing to insert. Already existing')
 
-        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        except Exception as e:
+            if e:
+                log.error(f'Sent to db not possible because of this error {e}')
+                pass
+            else:
+                pass
+        return 0
 
-        # cursor for execution
-        cur2 = con.cursor()
-
-        # Check if the row already exists, if no then INSERT new row
-        cur2.execute("SELECT * FROM molecules WHERE package_id = %s", (package_id,))
-        if cur2.fetchone() is None:
-            cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)",
-                         mol_values)
-        else:
-            cur2.execute(
-                "INSERT INTO molecule_data(package_id,inchi,smiles,inchi_key,exact_mass,mol_formula) VALUES (%s,%s,%s,%s,%s,%s)",
-                mol_values)
-        # commit cursor
-        con.commit()
-
-        # close cursor
-        cur.close()
-        # close cursor
-        cur2.close()
-
-        # close connection
-        con.close()
-
-        return "Data loaded to database"
+        # # connect to db
+        # con = psycopg2.connect(user=DB_USER,
+        #                        host=DB_HOST,
+        #                        password=DB_pwd,
+        #                        dbname=DB_NAME)
+        #
+        # con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        #
+        # # Cursor
+        # cur = con.cursor()
+        #
+        # # Check if the row already exists, if not then INSERT
+        # for val in value:
+        #     cur.execute(
+        #         "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0], val[1],))
+        #
+        #     if cur.fetchone() is None:
+        #         cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)",
+        #                     val)
+        #
+        # # Sending molecular information to database table(molecule_data table)
+        #
+        # mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass, mol_formula]
+        #
+        # con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        #
+        # # cursor for execution
+        # cur2 = con.cursor()
+        #
+        # # Check if the row already exists, if no then INSERT new row
+        # cur2.execute("SELECT * FROM molecules WHERE package_id = %s", (package_id,))
+        # if cur2.fetchone() is None:
+        #     cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)",
+        #                  mol_values)
+        # else:
+        #     cur2.execute(
+        #         "INSERT INTO molecule_data(package_id,inchi,smiles,inchi_key,exact_mass,mol_formula) VALUES (%s,%s,%s,%s,%s,%s)",
+        #         mol_values)
+        # # commit cursor
+        # con.commit()
+        #
+        # # close cursor
+        # cur.close()
+        # # close cursor
+        # cur2.close()
+        #
+        # # close connection
+        # con.close()
+        #
+        # return "Data loaded to database"
 
     def _extract_measuring_tech(self, content):
 
