@@ -412,9 +412,9 @@ class OaipmhHarvester(HarvesterBase):
             package_dict["groups"] = groups
 
             # allow sub-classes to add additional fields
-            # package_dict = self._extract_additional_fields(
-            #     content, package_dict
-            # )
+            package_dict = self._extract_additional_fields(
+                content, package_dict
+            )
 
             log.debug("Create/update package using dict: %s" % package_dict)
             self._create_or_update_package(
@@ -485,7 +485,8 @@ class OaipmhHarvester(HarvesterBase):
                 if key == 'relation' or key == 'relationType':
                     try:
                         value = value
-                    except Exception:
+                    except Exception as e:
+                        log.debug(f'Exception in _extract_tags_and_extras {e}')
                         pass
                 else:
                     value = value[0]
@@ -544,10 +545,10 @@ class OaipmhHarvester(HarvesterBase):
             return self._find_or_create_groups(content["series"], context)
         return []
 
-    # def _extract_additional_fields(self, content, package_dict):
-    #     # This method is the ideal place for sub-classes to
-    #     # change whatever they want in the package_dict
-    #     return package_dict
+    def _extract_additional_fields(self, content, package_dict):
+        # This method is the ideal place for sub-classes to
+        # change whatever they want in the package_dict
+        return package_dict
 
     def _find_or_create_groups(self, groups, context):
         log.debug("Group names: %s" % groups)
