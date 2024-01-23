@@ -651,7 +651,7 @@ class OaipmhHarvester(HarvesterBase):
 
             # Related Resources of each dataset
 
-            for val in values:
+            for val in zip(values):
                 log.debug(f'{val}')
                 try:
                     related_resources.create(val[0], json.dumps(val[1]), json.dumps(val[2]), json.dumps(val[3]), None)
