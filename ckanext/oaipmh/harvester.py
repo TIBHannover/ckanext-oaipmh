@@ -639,7 +639,6 @@ class OaipmhHarvester(HarvesterBase):
 
         try:
             standard_inchi = standard_inchi
-            log.debug(f'{standard_inchi}')
             inchi_key = inchi_key
             smiles = smiles
             exact_mass = exact_mass
@@ -651,13 +650,14 @@ class OaipmhHarvester(HarvesterBase):
             relation_value = mol_rel_data.get_mol_formula_by_package_id(package_id)
 
             # Related Resources of each dataset
-            try:
-                for val in values:
-                    log.debug(f'{val}')
+
+            for val in values:
+                log.debug(f'{val}')
+                try:
                     related_resources.create(val + (None,))
                     log.debug(f"related_resources uploaded")
-            except Exception as e:
-                log.error(e)
+                except Exception as e:
+                    log.error(e)
 
             # if there is no molecule at all, it inserts rows into molecules and molecule_rel_data dt
             if not molecule_id:
