@@ -379,7 +379,7 @@ class OaipmhHarvester(HarvesterBase):
 
             # create smiles code form inchi & add to extras table
             try:
-                package_dict["inchi"] = content['inchi']
+                package_dict["inchi"] = content['inchi'][0]
                 smiles, inchi_key, exact_mass, mol_formula = self._get_chemical_info(package_dict, content)
                 package_dict["inchi_key"] = inchi_key
                 package_dict["smiles"] = smiles
@@ -544,13 +544,12 @@ class OaipmhHarvester(HarvesterBase):
             return self._find_or_create_groups(content["series"], context)
         return []
 
-    def _extract_additional_fields(self, content, package_dict):
-        # This method is the ideal place for sub-classes to
-        # change whatever they want in the package_dict
-        return package_dict
+    # def _extract_additional_fields(self, content, package_dict):
+    #     # This method is the ideal place for sub-classes to
+    #     # change whatever they want in the package_dict
+    #     return package_dict
 
     def _find_or_create_groups(self, groups, context):
-        # TODO: Try and expect, have been added
         log.debug("Group names: %s" % groups)
         group_ids = []
         try:
@@ -621,7 +620,8 @@ class OaipmhHarvester(HarvesterBase):
 
         """ Database Table have been generated for storing related resources
         We connect to database and send those values directly  from harvested metadata
-        Molecule data is also sent from this function, storing into molecule_data table"""
+        Molecule data is also sent from this function, storing into molecule_data table
+        Sending into DB pythonically."""
 
         package_id = package['id']
         relation_id = content['relation']
@@ -633,7 +633,6 @@ class OaipmhHarvester(HarvesterBase):
 
         name_list = []
         package_id = package['id']
-        log.debug(package)
 
         try:
             standard_inchi = standard_inchi
@@ -674,58 +673,7 @@ class OaipmhHarvester(HarvesterBase):
                 pass
             else:
                 pass
-        return 0
-
-        # # connect to db
-        # con = psycopg2.connect(user=DB_USER,
-        #                        host=DB_HOST,
-        #                        password=DB_pwd,
-        #                        dbname=DB_NAME)
-        #
-        # con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        #
-        # # Cursor
-        # cur = con.cursor()
-        #
-        # # Check if the row already exists, if not then INSERT
-        # for val in value:
-        #     cur.execute(
-        #         "SELECT * FROM related_resources WHERE package_id = %s AND relation_id = %s;", (val[0], val[1],))
-        #
-        #     if cur.fetchone() is None:
-        #         cur.execute("INSERT INTO related_resources VALUES (nextval('related_resources_id_seq'),%s,%s,%s,%s)",
-        #                     val)
-        #
-        # # Sending molecular information to database table(molecule_data table)
-        #
-        # mol_values = [package_id, json.dumps(standard_inchi), smiles, inchi_key, exact_mass, mol_formula]
-        #
-        # con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        #
-        # # cursor for execution
-        # cur2 = con.cursor()
-        #
-        # # Check if the row already exists, if no then INSERT new row
-        # cur2.execute("SELECT * FROM molecules WHERE package_id = %s", (package_id,))
-        # if cur2.fetchone() is None:
-        #     cur2.execute("INSERT INTO molecule_data VALUES (nextval('molecule_data_id_seq'),%s,%s,%s,%s,%s,%s)",
-        #                  mol_values)
-        # else:
-        #     cur2.execute(
-        #         "INSERT INTO molecule_data(package_id,inchi,smiles,inchi_key,exact_mass,mol_formula) VALUES (%s,%s,%s,%s,%s,%s)",
-        #         mol_values)
-        # # commit cursor
-        # con.commit()
-        #
-        # # close cursor
-        # cur.close()
-        # # close cursor
-        # cur2.close()
-        #
-        # # close connection
-        # con.close()
-        #
-        # return "Data loaded to database"
+        return "Chemical Information sent to Database"
 
     def _extract_measuring_tech(self, content):
 
