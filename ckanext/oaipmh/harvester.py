@@ -116,7 +116,7 @@ class OaipmhHarvester(HarvesterBase):
             return None
             pass
 
-        except (Exception) as e:
+        except Exception as e:
             log.exception(
                 "Gather stage failed on %s: %s"
                 % (
@@ -291,7 +291,7 @@ class OaipmhHarvester(HarvesterBase):
 
             harvest_object.content = content
             harvest_object.save()
-        except (Exception) as e:
+        except Exception as e:
             log.exception(e)
             self._save_object_error(
                 "Exception in fetch stage for %s: %r / %s"
@@ -429,7 +429,7 @@ class OaipmhHarvester(HarvesterBase):
 
             log.debug(self._save_relationships_to_db(package_dict, content, smiles, inchi_key, exact_mass, mol_formula))
 
-        except (Exception) as e:
+        except Exception as e:
             log.exception(e)
             self._save_object_error(
                 "Exception in fetch stage for %s: %r / %s"
@@ -623,13 +623,13 @@ class OaipmhHarvester(HarvesterBase):
         """ Database Table have been generated for storing related resources
         We connect to database and send those values directly  from harvested metadata
         Molecule data is also sent from this function, storing into molecule_data table
-        Sending into DB pythonically."""
+        Sending into DB pythonically. """
 
         package_id = package['id']
         relation_id = content['relation']
         relationType = content['relationType']
         relationIdType = content['relationIdType']
-        standard_inchi = content["inchi"][0]
+        standard_inchi = content["inchi"]
 
         value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
         alternateName = ''
@@ -639,6 +639,7 @@ class OaipmhHarvester(HarvesterBase):
 
         try:
             standard_inchi = standard_inchi
+            log.debug(f'{standard_inchi}')
             inchi_key = inchi_key
             smiles = smiles
             exact_mass = exact_mass
@@ -657,7 +658,8 @@ class OaipmhHarvester(HarvesterBase):
             except Exception as e:
                 log.error(e)
 
-            if not molecule_id:  # if there is no molecule at all, it inserts rows into molecules and molecule_rel_data dt
+            # if there is no molecule at all, it inserts rows into molecules and molecule_rel_data dt
+            if not molecule_id:
                 molecules.create(standard_inchi, smiles, inchi_key, exact_mass, mol_formula)
                 new_molecules_id = molecules._get_inchi_from_db(inchi_key)
                 new_molecules_id = new_molecules_id[0]
