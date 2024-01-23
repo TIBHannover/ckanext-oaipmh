@@ -376,6 +376,7 @@ class OaipmhHarvester(HarvesterBase):
 
             # create smiles code form inchi & add to extras table
             try:
+                package_dict["inchi"] = content['inchi']
                 smiles, inchi_key, exact_mass, mol_formula = self._get_chemical_info(package_dict, content)
                 package_dict["inchi_key"] = inchi_key
                 package_dict["smiles"] = smiles
