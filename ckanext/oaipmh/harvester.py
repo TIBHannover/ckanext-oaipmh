@@ -33,6 +33,7 @@ from rdkit.Chem import rdMolDescriptors
 
 from ckanext.rdkit_visuals.models.molecule_tab import Molecules as molecules
 from ckanext.rdkit_visuals.models.molecule_rel import MolecularRelationData as mol_rel_data
+from ckanext.related_resources.models.related_resources import RelatedResources as related_resources
 
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
@@ -628,9 +629,10 @@ class OaipmhHarvester(HarvesterBase):
         relation_id = content['relation']
         relationType = content['relationType']
         relationIdType = content['relationIdType']
-        standard_inchi = content["inchi"]
+        standard_inchi = content["inchi"][0]
 
         value = list(self.yield_func(package_id, relation_id, relationType, relationIdType))
+        alternateName = ''
 
         name_list = []
         package_id = package['id']
@@ -647,6 +649,8 @@ class OaipmhHarvester(HarvesterBase):
             # log.debug(f"Current molecule_d  {molecule_id}")
             relation_value = mol_rel_data.get_mol_formula_by_package_id(package_id)
             # log.debug(f"Here is the relation {relation_value}")
+
+            related_resources.create(package_id, relation_id, relationType, relationIdType, alternateName)
 
             # TODO: Check if relationship exists or not.
 
