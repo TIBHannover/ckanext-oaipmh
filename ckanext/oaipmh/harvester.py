@@ -651,7 +651,11 @@ class OaipmhHarvester(HarvesterBase):
             # log.debug(f"Here is the relation {relation_value}")
 
             # Related Resources of each dataset
-            related_resources.create(package_id, relation_id, relationType, relationIdType, alternateName)
+            try:
+                related_resources.create(package_id, relation_id, relationType, relationIdType, alternateName)
+                log.debug(f"related_resources uploaded")
+            except Exception as e:
+                log.error(e)
 
             if not molecule_id:  # if there is no molecule at all, it inserts rows into molecules and molecule_rel_data dt
                 molecules.create(standard_inchi, smiles, inchi_key, exact_mass, mol_formula)
