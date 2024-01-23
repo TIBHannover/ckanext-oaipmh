@@ -595,17 +595,19 @@ class OaipmhHarvester(HarvesterBase):
 
         for inchi_code in standard_inchi:
             if inchi_code.startswith('InChI'):
-                molecu = inchi.MolFromInchi(inchi_code)
-                smiles = rdmolfiles.MolToSmiles(molecu)
+                molecule = inchi.MolFromInchi(inchi_code)
+                smiles = rdmolfiles.MolToSmiles(molecule)
                 inchi_key = inchi.InchiToInchiKey(inchi_code)
-                exact_mass = Descriptors.MolWt(molecu)
-                mol_formula = rdMolDescriptors.CalcMolFormula(molecu)
+                exact_mass = Descriptors.MolWt(molecule)
+                mol_formula = rdMolDescriptors.CalcMolFormula(molecule)
 
                 # upload images to folder
                 try:
                     filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                    open(filepath, 'w')
-                    Draw.MolToFile(molecu, filepath)
+                    if os.path.isfile(filepath):
+                        log.debug("Image Already exists")
+                    else:
+                        Draw.MolToFile(molecule, filepath)
                     log.debug("Molecule Image generated for %s", package_id)
                 except Exception as e:
                     log.error(e)
