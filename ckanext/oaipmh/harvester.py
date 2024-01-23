@@ -642,9 +642,9 @@ class OaipmhHarvester(HarvesterBase):
 
             # Check if the row already exists, if not then INSERT
             molecule_id = molecules._get_inchi_from_db(inchi_key)
-            log.debug(f"Current molecule_d  {molecule_id}")
+            # log.debug(f"Current molecule_d  {molecule_id}")
             relation_value = mol_rel_data.get_mol_formula_by_package_id(package_id)
-            log.debug(f"Here is the relation {relation_value}")
+            # log.debug(f"Here is the relation {relation_value}")
 
             # TODO: Check if relationship exists or not.
 
