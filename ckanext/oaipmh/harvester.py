@@ -654,7 +654,7 @@ class OaipmhHarvester(HarvesterBase):
             for val in values:
                 log.debug(f'{val[2]}')
                 try:
-                    related_resources.create(val[0], json.dumps(val[1]), json.dumps(val[2]), json.dumps(val[3]), None)
+                    related_resources.create(val[0], val[1], val[2], val[3], None)
                     log.debug(f"related_resources uploaded")
                 except Exception as e:
                     log.error(e)
